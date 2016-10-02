@@ -69,6 +69,11 @@ class Layout
         $this->config = $config;
     }
 
+    public function __destruct()
+    {
+        $this->xmlTree = null;
+    }
+
     /**
      * Layout update instance.
      *

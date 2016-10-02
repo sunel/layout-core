@@ -1,0 +1,21 @@
+{
+    "name": "sunel/layout-core",
+    "description": "Simple way to build your page in an upgrade-compatible way.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sunel TR",
+            "email": "sunelbe@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "symfony/finder": "3.0.*",
+        "nesbot/carbon": "~1.20"
+    },
+    "autoload": {
+        "psr-4": {
+            "Layout\\Core\\": "src/"
+        }
+    }
+}

@@ -7,7 +7,7 @@ Layout
 
 ## Manual
 
-Refer to the [Wiki](https://github.com/sunel/laravel-core/wiki) for installation instructions and how to use this package.
+Refer to the [Wiki](https://github.com/sunel/layout-core/wiki) for installation instructions and how to use this package.
 
 ## License
 

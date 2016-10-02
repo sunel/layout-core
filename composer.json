@@ -1,6 +1,6 @@
 {
     "name": "sunel/layout-core",
-    "description": "Simple way to build your page in an upgrade-compatible way.",
+    "description": "Framework Agnostic way to build your page in an upgrade-compatible way.",
     "license": "MIT",
     "authors": [
         {

@@ -310,7 +310,9 @@ class Layout
             [], $class, $method
         );
 
-        if (!method_exists($instance = app($class), $method)) {
+        $classResolver = $this->config->get('class_resolver');
+
+        if (!method_exists($instance = $classResolver($class), $method)) {
             throw new MethodNotFoundException();
         }
 
@@ -424,8 +426,8 @@ class Layout
     {
         if (is_string($block)) {
             if (class_exists($block, true)) {
-                $block = app($block);
-
+                $classResolver = $this->config->get('class_resolver');
+                $block = $classResolver($block);
                 $block->addData($attributes);
             }
         }

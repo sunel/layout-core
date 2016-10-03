@@ -130,7 +130,7 @@ class Factory
         // dispatch event for adding handles to layout update
         $this->events->fire(
             'route.layout.load.before',
-            ['route' => app('request'), 'layout' => $this->getLayout()]
+            ['layout' => $this->getLayout()]
         );
         // load layout updates by specified handles
         start_profile("$profilerKey::layout_load");
@@ -170,7 +170,7 @@ class Factory
 
         $this->events->fire(
             'route.layout.generate.xml.before',
-            ['route' => app('request'), 'layout' => $this->getLayout()]
+            ['layout' => $this->getLayout()]
         );
 
         // generate xml from collected text updates
@@ -187,7 +187,7 @@ class Factory
         // dispatch event for adding xml layout elements
         $this->events->fire(
             'route.layout.generate.blocks.before',
-            ['route' => app('request'), 'layout' => $this->getLayout()]
+            ['layout' => $this->getLayout()]
         );
 
         // generate blocks from xml layout
@@ -197,7 +197,7 @@ class Factory
 
         $this->events->fire(
             'route.layout.generate.blocks.after',
-            ['route' => app('request'), 'layout' => $this->getLayout()]
+            ['layout' => $this->getLayout()]
         );
 
         return $this;
@@ -221,7 +221,6 @@ class Factory
         $this->events->fire('route.layout.render.before.'.$this->routeHandler());
 
         $output = $this->getLayout()->getOutput();
-
         stop_profile("$profilerKey::layout_render");
 
         return $output;
@@ -309,3 +308,28 @@ class Factory
         return $this;
     }
 }
+
+if (!function_exists('start_profile')) {
+    /**
+     * Start the profile for debugging.
+     *
+     * @param string $name
+     */
+    function start_profile($name)
+    {
+       
+    }
+}
+
+if (!function_exists('stop_profile')) {
+    /**
+     * Stop the profile for debugging.
+     *
+     * @param string $name
+     */
+    function stop_profile($name)
+    {
+        
+    }
+}
+

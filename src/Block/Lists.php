@@ -2,7 +2,9 @@
 
 namespace Layout\Core\Block;
 
-class List extends Text
+use Layout\Core\Exceptions\InvalidBlockException;
+
+class Lists extends Text
 {
     protected function _toHtml()
     {
@@ -10,7 +12,7 @@ class List extends Text
         foreach ($this->getSortedChildren() as $name) {
             $block = $this->getLayout()->getBlock($name);
             if (!$block) {
-                throw new \Layout\InvalidBlockException('Invalid block type:'.$block);
+                throw new InvalidBlockException('Invalid block type:'.$block);
             }
             $this->addText($block->toHtml());
         }

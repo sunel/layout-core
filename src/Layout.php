@@ -47,6 +47,13 @@ class Layout
     protected $blocks = [];
 
     /**
+     * Missed Blocks registry.
+     *
+     * @var array
+     */
+    protected $missedBlocks = [];
+
+    /**
      * Cache of block callbacks to output during rendering.
      *
      * @var array
@@ -155,6 +162,17 @@ class Layout
         }
     }
 
+    public function fixMissedBlock()
+    {
+        foreach ($this->missedBlocks as $parent => $nodes) {
+            foreach ($nodes as $node) {
+                $parentBlock = $this->getBlock($parent);
+                $childBlock = $this->getBlock($node->getBlockName());
+                $this->addToParent($parentBlock, $childBlock, $node);
+            }
+        }
+    }
+
     /**
      * Add block object to layout based on xml node data.
      *
@@ -190,26 +208,17 @@ class Layout
                 $parentBlock = $this->getBlock($parentName);
             }
         }
-        if (!empty($parentBlock)) {
-            $alias = isset($node['as']) ? (string) $node['as'] : '';
-            if (isset($node['before'])) {
-                $sibling = (string) $node['before'];
-                if ('-' === $sibling) {
-                    $sibling = '';
-                }
-                $parentBlock->insert($block, $sibling, false, $alias);
-            } elseif (isset($node['after'])) {
-                $sibling = (string) $node['after'];
-                if ('-' === $sibling) {
-                    $sibling = '';
-                }
-                $parentBlock->insert($block, $sibling, true, $alias);
-            } else {
-                $parentBlock->append($block, $alias);
-            }
-        }
+
         if (!empty($node['template'])) {
             $block->setTemplate((string) $node['template']);
+        }
+
+        if (!empty($parentBlock)) {
+            $this->addToParent($parentBlock, $block, $node);
+        } else {
+            if($parent->getBlockName()) {
+                $this->missedBlocks[$parent->getBlockName()][] = $node;
+            }
         }
 
         if (!empty($node['output'])) {
@@ -220,6 +229,26 @@ class Layout
         stop_profile($profilerKey);
 
         return $this;
+    }
+
+    protected function addToParent($parentBlock, $childBlock, $node)
+    {
+        $alias = isset($node['as']) ? (string) $node['as'] : '';
+        if (isset($node['before'])) {
+            $sibling = (string) $node['before'];
+            if ('-' === $sibling) {
+                $sibling = '';
+            }
+            $parentBlock->insert($childBlock, $sibling, false, $alias);
+        } elseif (isset($node['after'])) {
+            $sibling = (string) $node['after'];
+            if ('-' === $sibling) {
+                $sibling = '';
+            }
+            $parentBlock->insert($childBlock, $sibling, true, $alias);
+        } else {
+            $parentBlock->append($childBlock, $alias);
+        }
     }
 
     /**

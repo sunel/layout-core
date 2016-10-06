@@ -193,6 +193,7 @@ class Factory
         // generate blocks from xml layout
         start_profile("$profilerKey::layout_generate_blocks");
         $this->getLayout()->generateBlocks();
+        $this->getLayout()->fixMissedBlock();
         stop_profile("$profilerKey::layout_generate_blocks");
 
         $this->events->fire(
@@ -222,7 +223,6 @@ class Factory
 
         $output = $this->getLayout()->getOutput();
         stop_profile("$profilerKey::layout_render");
-
         return $output;
     }
 

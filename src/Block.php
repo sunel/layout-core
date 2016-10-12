@@ -3,6 +3,7 @@
 namespace Layout\Core;
 
 use Carbon\Carbon;
+use Layout\Core\Contracts\Profiler;
 use Layout\Core\Contracts\ConfigResolver;
 use Layout\Core\Contracts\Cacheable as Cache;
 use Layout\Core\Contracts\EventsDispatcher as Dispatcher;
@@ -39,6 +40,13 @@ abstract class Block extends Object
      * @var Layout\Core\Contracts\EventsDispatcher
      */
     protected $events;
+
+    /**
+     * The profiler instance.
+     *
+     * @var \Layout\Core\Contracts\Profiler
+     */
+    protected $profiler;
 
     /**
      * Block name in layout.
@@ -148,12 +156,19 @@ abstract class Block extends Object
      *
      * @param \Layout\Core\Contracts\Cacheable $cache
      * @param \Layout\Core\Contracts\ConfigResolver $config
+     * @param \Layout\Core\Contracts\Profiler $profile
      */
-    public function __construct(Cache $cache, ConfigResolver $config, Dispatcher $events)
+    public function __construct(
+        Cache $cache, 
+        ConfigResolver $config, 
+        Dispatcher $events, 
+        Profiler $profile
+    )
     {
         $this->cache = $cache;
         $this->config = $config;
         $this->events = $events;
+        $this->profile = $profile;
     }
 
     /**
@@ -1113,7 +1128,7 @@ abstract class Block extends Object
      */
     public function fetchView($fileName)
     {
-        start_profile($fileName);
+        $this->profile->start($fileName);
 
         $html = '';
 
@@ -1147,7 +1162,7 @@ HTML;
             $html .= '</div>';
         }
 
-        stop_profile($fileName);
+        $this->profile->stop($fileName);
 
         return $html;
     }

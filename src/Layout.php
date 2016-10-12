@@ -4,6 +4,7 @@ namespace Layout\Core;
 
 use ReflectionMethod;
 use ReflectionFunctionAbstract;
+use Layout\Core\Contracts\Profiler;
 use Layout\Core\Contracts\ConfigResolver;
 use Layout\Core\Exceptions\InvalidBlockException;
 use Layout\Core\Exceptions\MethodNotFoundException;
@@ -40,6 +41,13 @@ class Layout
     protected $config;
 
     /**
+     * The profiler instance.
+     *
+     * @var \Layout\Core\Contracts\Profiler
+     */
+    protected $profiler;
+
+    /**
      * Blocks registry.
      *
      * @var array
@@ -67,13 +75,26 @@ class Layout
      */
     protected $events;
 
-    public function __construct(Dispatcher $events, Update $update, ConfigResolver $config)
-    {
+    /**
+     * Create a new layout instance.
+     *
+     * @param \Layout\Core\Contracts\EventsDispatcher $events
+     * @param \Layout\Core\Update $update
+     * @param \Layout\Core\Contracts\ConfigResolver $config
+     * @param \Layout\Core\Contracts\Profiler $profile
+     */
+    public function __construct(
+        Dispatcher $events,
+        Update $update,
+        ConfigResolver $config,
+        Profiler $profile
+    ) {
         $this->elementClass = Element::class;
         $this->setXml(simplexml_load_string('<layout/>', $this->elementClass));
         $this->events = $events;
         $this->update = $update;
         $this->config = $config;
+        $this->profile = $profile;
     }
 
     public function __destruct()
@@ -193,7 +214,7 @@ class Layout
         $blockName = (string) $node['name'];
         $profilerKey = 'BLOCK: '.$blockName;
 
-        start_profile($profilerKey);
+        $this->profile->start($profilerKey);
 
         $block = $this->addBlock($className, $blockName);
         if (!$block) {
@@ -216,7 +237,7 @@ class Layout
         if (!empty($parentBlock)) {
             $this->addToParent($parentBlock, $block, $node);
         } else {
-            if($parent->getBlockName()) {
+            if ($parent->getBlockName()) {
                 $this->missedBlocks[$parent->getBlockName()][] = $node;
             }
         }
@@ -226,7 +247,7 @@ class Layout
             $this->addOutputBlock($blockName, $method);
         }
 
-        stop_profile($profilerKey);
+        $this->profile->stop($profilerKey);
 
         return $this;
     }
@@ -282,7 +303,7 @@ class Layout
 
         $profilerKey = 'BLOCK ACTION: '.$parentName.' -> '.$method;
 
-        start_profile($profilerKey);
+        $this->profile->start($profilerKey);
 
         if (!empty($parentName)) {
             $block = $this->getBlock($parentName);
@@ -321,7 +342,7 @@ class Layout
             call_user_func_array([$block, $method], $args);
         }
 
-        stop_profile($profilerKey);
+        $this->profile->stop($profilerKey);
 
         return $this;
     }

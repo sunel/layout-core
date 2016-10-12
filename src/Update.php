@@ -3,12 +3,19 @@
 namespace Layout\Core;
 
 use SimpleXMLElement;
+use InvalidArgumentException;
 use Symfony\Component\Finder\Finder;
+use Layout\Core\Contracts\Profiler;
 use Layout\Core\Contracts\ConfigResolver;
 use Layout\Core\Contracts\Cacheable as Cache;
 
 class Update
 {
+    /**
+     * Additional tag for cleaning layout cache convenience.
+     */
+    const LAYOUT_GENERAL_CACHE_TAG = 'LAYOUT_GENERAL_CACHE_TAG';
+
     /**
      * The cache instance.
      *
@@ -24,9 +31,11 @@ class Update
     protected $config;
 
     /**
-     * Additional tag for cleaning layout cache convenience.
+     * The profiler instance.
+     *
+     * @var \Layout\Core\Contracts\Profiler
      */
-    const LAYOUT_GENERAL_CACHE_TAG = 'LAYOUT_GENERAL_CACHE_TAG';
+    protected $profiler;
 
     /**
      * Layout Update Simplexml Element Class Name.
@@ -66,11 +75,13 @@ class Update
      *
      * @param \Layout\Core\Contracts\Cacheable $cache
      * @param \Layout\Core\Contracts\ConfigResolver $config
+     * @param \Layout\Core\Contracts\Profiler $profile
      */
-    public function __construct(Cache $cache, ConfigResolver $config)
+    public function __construct(Cache $cache, ConfigResolver $config, Profiler $profile)
     {
         $this->cache = $cache;
         $this->config = $config;
+        $this->profile = $profile;
     }
 
     public function getElementClass()
@@ -183,8 +194,6 @@ class Update
     /**
      * Load layout updates by handles.
      *
-     * @param array|string $handles
-     *
      * @return \Layout\Core\Update
      */
     public function load($handles = [])
@@ -228,7 +237,7 @@ class Update
      */
     public function merge($handle)
     {
-        $packageUpdatesStatus = $this->fetchPackageLayoutUpdates($handle);
+        $this->fetchPackageLayoutUpdates($handle);
 
         return $this;
     }
@@ -236,7 +245,7 @@ class Update
     public function fetchPackageLayoutUpdates($handle)
     {
         $profilerKey = 'layout_update: '.$handle;
-        start_profile($profilerKey);
+        $this->profile->start($profilerKey);
         if (empty($this->moduleLayout)) {
             $this->fetchFileLayoutUpdates();
         }
@@ -257,7 +266,7 @@ class Update
             $this->fetchRecursiveUpdates($updateXml);
             $this->addUpdate($updateXml->innerXml());
         }
-        stop_profile($profilerKey);
+        $this->profile->stop($profilerKey);
 
         return true;
     }
@@ -307,47 +316,50 @@ class Update
      */
     public function getFileLayoutUpdatesXml()
     {
-        $layoutXml = null;
-        $elementClass = $this->getElementClass();
+        $section = $this->config->get('handle_layout_section');
+        $fileLocations = $this->config->get('xml_location.'.$section);
 
-        $layoutStr = '';
-        $fileLocation = $this->config->get('handle_layout_section');
-        $fileLocation = $this->config->get('xml_location.'.$fileLocation);
-        if (!is_array($fileLocation)) {
-            $fileLocation = [$fileLocation];
+        if (empty($fileLocations)) {
+            throw new InvalidArgumentException("Layout file location for `{$section}` section is not given.");
+        }
+
+        if (!is_array($fileLocations)) {
+            $fileLocations = [$fileLocations];
         }
         
-        foreach ($fileLocation as $location) {
-            foreach (Finder::create()->files()->name('default.xml')->in($location) as $file) {
-                $fileStr = $file->getContents();
-                $fileXml = simplexml_load_string($fileStr, $elementClass);
+        $layoutXml = null;
+        $layoutStr = '';
+        $elementClass = $this->getElementClass();
 
-                if (!$fileXml instanceof SimpleXMLElement) {
-                    continue;
-                }
+        foreach (Finder::create()->files()->name('default.xml')->in($fileLocations) as $file) {
+            $fileStr = $file->getContents();
+            $fileXml = simplexml_load_string($fileStr, $elementClass);
 
-                $layoutStr .= $fileXml->innerXml();
+            if (!$fileXml instanceof SimpleXMLElement) {
+                continue;
             }
-            foreach (Finder::create()->files()->name('*.xml')->notName('default.xml')->notName('local.xml')->in($location) as $file) {
-                $fileStr = $file->getContents();
-                $fileXml = simplexml_load_string($fileStr, $elementClass);
 
-                if (!$fileXml instanceof SimpleXMLElement) {
-                    continue;
-                }
+            $layoutStr .= $fileXml->innerXml();
+        }
+        foreach (Finder::create()->files()->name('*.xml')->notName('default.xml')->notName('local.xml')->in($fileLocations) as $file) {
+            $fileStr = $file->getContents();
+            $fileXml = simplexml_load_string($fileStr, $elementClass);
 
-                $layoutStr .= $fileXml->innerXml();
+            if (!$fileXml instanceof SimpleXMLElement) {
+                continue;
             }
-            foreach (Finder::create()->files()->name('local.xml')->in($location) as $file) {
-                $fileStr = $file->getContents();
-                $fileXml = simplexml_load_string($fileStr, $elementClass);
 
-                if (!$fileXml instanceof SimpleXMLElement) {
-                    continue;
-                }
+            $layoutStr .= $fileXml->innerXml();
+        }
+        foreach (Finder::create()->files()->name('local.xml')->in($fileLocations) as $file) {
+            $fileStr = $file->getContents();
+            $fileXml = simplexml_load_string($fileStr, $elementClass);
 
-                $layoutStr .= $fileXml->innerXml();
+            if (!$fileXml instanceof SimpleXMLElement) {
+                continue;
             }
+
+            $layoutStr .= $fileXml->innerXml();
         }
 
         $layoutXml = simplexml_load_string('<layouts>'.$layoutStr.'</layouts>', $elementClass);

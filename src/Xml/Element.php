@@ -1,9 +1,49 @@
 <?php
 
-namespace Layout\Core;
+namespace Layout\Core\Xml;
 
-class AbstractXml extends \SimpleXMLElement
+class Element extends \SimpleXMLElement
 {
+    /**
+     * Get block name
+     *
+     * @return bool|string
+     */
+    public function getBlockName()
+    {
+        $tagName = (string)$this->getName();
+        $isThisBlock = empty($this['name']) || !in_array(
+            $tagName,
+            ['block', 'referenceBlock']
+        );
+
+        if ($isThisBlock) {
+            return false;
+        }
+        return (string)$this['name'];
+    }
+
+    /**
+     * Get element name
+     *
+     * Advanced version of getBlockName() method: gets name for container as well as for block
+     *
+     * @return string|bool
+     */
+    public function getElementName()
+    {
+        $tagName = $this->getName();
+        $isThisContainer = !in_array(
+            $tagName,
+            ['block', 'referenceBlock', 'container', 'referenceContainer']
+        );
+
+        if ($isThisContainer) {
+            return false;
+        }
+        return $this->getAttribute('name');
+    }
+
     /**
      * Returns parent node for the element.
      *

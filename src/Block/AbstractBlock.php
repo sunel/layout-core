@@ -81,18 +81,18 @@ abstract class AbstractBlock extends Object
      *
      * @param \Layout\Core\Contracts\Cacheable $cache
      * @param \Layout\Core\Contracts\ConfigResolver $config
-     * @param \Layout\Core\Contracts\Profiler $profile
+     * @param \Layout\Core\Contracts\Profiler $profiler
      */
     public function __construct(
         Cache $cache,
         ConfigResolver $config,
         Dispatcher $events,
-        Profiler $profile
+        Profiler $profiler
     ) {
         $this->cache = $cache;
         $this->config = $config;
         $this->events = $events;
-        $this->profile = $profile;
+        $this->profiler = $profiler;
     }
 
     /**
@@ -717,7 +717,7 @@ abstract class AbstractBlock extends Object
      */
     public function fetchView($fileName)
     {
-        $this->profile->start($fileName);
+        $this->profiler->start($fileName);
 
         $html = '';
 
@@ -751,7 +751,7 @@ HTML;
             $html .= '</div>';
         }
 
-        $this->profile->stop($fileName);
+        $this->profiler->stop($fileName);
 
         return $html;
     }

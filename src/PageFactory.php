@@ -81,13 +81,24 @@ class PageFactory
     /**
      * Render current layout and return the resonse string
      *
-     * @return array ['head' => '' ,'body' => ''] 
+     * @return array ['head' => [] ,'body' => '']
      */
     public function render()
     {
         return $this->initLayout()
                 ->buildLayout()
                 ->renderLayout();
+    }
+
+    /**
+     * reset the layout for the current page
+     *
+     * @return $this
+     */
+    public function resetPage()
+    {
+        $this->getLayout()->resetLayout();
+        return $this;
     }
 
     /**
@@ -113,6 +124,45 @@ class PageFactory
         $this->generateLayoutXml();
         $this->generateLayoutBlocks();
         return $this;
+    }
+
+    /**
+     * Render page template.
+     *
+     * @return array ['head' => '' ,'body' => '']
+     */
+    public function renderLayout()
+    {
+        $profilerKey = self::PROFILER_KEY.'::'.$this->routeHandler();
+
+        $this->profiler->start("$profilerKey::layout_render");
+
+        $this->events->fire('route.layout.render.before');
+        $this->events->fire('route.layout.render.before.'.$this->routeHandler());
+
+        $output = $this->getLayout()->getOutput();
+        $this->profiler->stop("$profilerKey::layout_render");
+        return $output;
+    }
+
+    /**
+     * @param string|string[] $handleName
+     * @return $this
+     */
+    public function addHandle($handleName)
+    {
+        $this->getLayout()->getUpdate()->addHandle($handleName);
+        return $this;
+    }
+
+    /**
+     * Retrieve the default layout handle name for the current request
+     *
+     * @return string
+     */
+    public function routeHandler()
+    {
+        return $this->config->get('current_route_handle');
     }
 
     /**
@@ -181,44 +231,5 @@ class PageFactory
         $this->profiler->stop("$profilerKey::layout_generate_blocks");
 
         return $this;
-    }
-
-    /**
-     * Render page template.
-     *
-     * @return array ['head' => '' ,'body' => '']
-     */
-    public function renderLayout()
-    {
-        $profilerKey = self::PROFILER_KEY.'::'.$this->routeHandler();
-
-        $this->profiler->start("$profilerKey::layout_render");
-
-        $this->events->fire('route.layout.render.before');
-        $this->events->fire('route.layout.render.before.'.$this->routeHandler());
-
-        $output = $this->getLayout()->getOutput();
-        $this->profiler->stop("$profilerKey::layout_render");
-        return $output;
-    }
-
-    /**
-     * @param string|string[] $handleName
-     * @return $this
-     */
-    protected function addHandle($handleName)
-    {
-        $this->getLayout()->getUpdate()->addHandle($handleName);
-        return $this;
-    }
-
-    /**
-     * Retrieve the default layout handle name for the current request
-     *
-     * @return string
-     */
-    protected function routeHandler()
-    {
-        return $this->config->get('current_route_handle');
     }
 }

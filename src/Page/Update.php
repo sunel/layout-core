@@ -68,9 +68,16 @@ class Update
     /**
      * In-memory cache for loaded layout updates
      *
-     * @var \Layout\Core\Xml\Element
+     * @var \Layout\Core\Xml\Element[]
      */
-    protected $layoutUpdatesCache;
+    protected $layoutUpdatesCache = [];
+
+    /**
+     * Loaded layout handles
+     *
+     * @var array
+     */
+    protected $layoutHandles = [];
 
     /**
      * @var string
@@ -160,6 +167,18 @@ class Update
     }
 
     /**
+     * Reset handle from update
+     *
+     * @return $this
+     */
+    public function resetHandle()
+    {
+        $this->handles = [];
+        $this->updates = [];
+        return $this;
+    }
+
+    /**
      * Get handle names array
      *
      * @return array
@@ -192,6 +211,13 @@ class Update
     public function getCacheId()
     {
         return 'LAYOUT_'.md5(implode('__', $this->getHandles()));
+    }
+
+    public function collectHandlesFromUpdates()
+    {
+        $layout = $this->getFileLayoutUpdatesXml();
+
+        return $this->layoutHandles;
     }
 
     /**
@@ -304,17 +330,17 @@ class Update
     }
 
     /**
-     * Retrieve already merged layout updates from files for specified area/theme/package/store
+     * Retrieve already merged layout updates from files for specified area
      *
      * @return \Layout\Core\Xml\Element
      */
     public function getFileLayoutUpdatesXml()
     {
-        if ($this->layoutUpdatesCache) {
-            return $this->layoutUpdatesCache;
-        }
-        
         $section = $this->config->get('handle_layout_section');
+
+        if (isset($this->layoutUpdatesCache[$section])) {
+            return $this->layoutUpdatesCache[$section];
+        }
 
         $cacheId = "LAYOUT_{$section}";
         $result = $this->loadCache($cacheId);
@@ -331,10 +357,15 @@ class Update
 
             $result = $this->getFileLayoutXml($fileLocations);
             $this->saveCache($result, $cacheId);
+            $this->saveCache(json_encode($this->layoutHandles), $cacheId.'_handles_found');
+        } else {
+            $handlesFound = $this->loadCache($cacheId.'_handles_found');
+            $this->layoutHandles = json_decode($handlesFound, true);
         }
+
         $result = '<layouts xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' . $result . '</layouts>';
-        $this->layoutUpdatesCache = $this->_loadXmlString($result);
-        return $this->layoutUpdatesCache;
+        $this->layoutUpdatesCache[$section] = $this->_loadXmlString($result);
+        return $this->layoutUpdatesCache[$section];
     }
 
 
@@ -363,6 +394,9 @@ class Update
 
             $handleName = basename($file->getFilename(), '.xml');
             $tagName = $fileXml->getName() === 'layout' ? 'layout' : 'handle';
+            if($tagName == 'handle') {
+                $this->layoutHandles[] = $handleName;
+            }
             $handleAttributes = ' id="' . $handleName . '"' . $this->_renderXmlAttributes($fileXml);
             $handleStr = '<' . $tagName . $handleAttributes . '>' . $fileXml->innerXml() . '</' . $tagName . '>';
             $layoutStr .= $handleStr;

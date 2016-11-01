@@ -8,20 +8,28 @@ use Layout\Core\Page\Layout;
 class Head
 {
     /**
+     * Holds the resolved asset data
+     * 
+     * @var array
+     */
+    protected $resultAsset = [];
+
+    /**
      * Genrate the head section and return it
      *
      * @param Layout\Core\Data\LayoutStack $stack
      * @param Layout\Core\Page\Layout $layout
-     * @return string
+     * @return array
      */
     public function generate(LayoutStack $stack, Layout $layout)
     {
-        $result = '';
-        $result .= $this->renderMetadata($stack);
-        $result .= $this->renderTitle($stack);
+        $result = [];
+        $result['meta'] = $this->renderMetadata($stack);
+        $result['title'] = $this->renderTitle($stack);
         $stack->processRemoveAssets();
-        $result .= $this->renderAssets($stack);
-        $result .= $layout->getConfigObject()->get('head.includes', '');    
+        $result['js'] = $this->renderJsAssets($stack);
+        $result['css'] = $this->renderCssAssets($stack);
+        $result['head_includes'] = $layout->getConfigObject()->get('head.includes', '');    
         return $result;
     }
 
@@ -84,6 +92,29 @@ class Head
         return $metadataTemplate;
     }
 
+    /**
+     * 
+     * @param Layout\Core\Data\LayoutStack $stack
+     * @return string
+     */
+    protected function renderCssAssets(LayoutStack $stack)
+    {
+        $result = $this->renderAssets($stack);
+        unset($result['js']);
+        return implode('', $result);
+    }
+
+    /**
+     * 
+     * @param Layout\Core\Data\LayoutStack $stack
+     * @return string
+     */
+    protected function renderJsAssets(LayoutStack $stack)
+    {
+        $result = $this->renderAssets($stack);
+        return $result['js'];
+    }
+
      /**
      * 
      * @param Layout\Core\Data\LayoutStack $stack
@@ -91,14 +122,17 @@ class Head
      */
     protected function renderAssets(LayoutStack $stack)
     {
-        $result = array_fill_keys(['base', 'css','ioc','link','js'], '');
-        foreach ($stack->getAssets() as $asset) {
-            $attributes = array_diff_key($asset,array_flip(['src','content_type']));
-            $attributes = $this->getAttributes($attributes);
-            $assetTemplate = $this->getAssetTemplate($asset['content_type'],$attributes);
-            $result[$asset['content_type']] .= sprintf($assetTemplate, $asset['src']);
+        if(empty($this->resultAsset)) {
+            $result = array_fill_keys(['base', 'css','ioc','link','js'], '');
+            foreach ($stack->getAssets() as $asset) {
+                $attributes = array_diff_key($asset,array_flip(['src','content_type']));
+                $attributes = $this->getAttributes($attributes);
+                $assetTemplate = $this->getAssetTemplate($asset['content_type'],$attributes);
+                $result[$asset['content_type']] .= sprintf($assetTemplate, $asset['src']);
+            }
+            $this->resultAsset = $result;
         }
-        return implode('', $result);
+        return $this->resultAsset;
     }
 
     /**

@@ -49,6 +49,6 @@ class Body implements ReaderInterface
                 continue;
             }
         }
-        $this->nodeReader->read($stack, $node);
+        $this->nodeReader->read($stack, $element);
     }
 }

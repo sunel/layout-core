@@ -181,7 +181,7 @@ class Layout
      *
      * @return \Layout\Core\Xml\Element
      */
-    protected function getXml()
+    public function getXml()
     {
         return $this->xmlTree;
     }
@@ -213,6 +213,20 @@ class Layout
         $xml = $this->getUpdate()->asSimplexml();
         $this->setXml($xml);
         $this->structure->importElements([]);
+        $this->layoutStack = new LayoutStack();
+        return $this;
+    }
+
+    /**
+     * reset the layout
+     *
+     * @return $this
+     */
+    public function resetLayout()
+    {
+        $this->getUpdate()->resetHandle();
+        $this->_output = [];
+        $this->_renderElementCache = [];
         return $this;
     }
 
@@ -280,10 +294,22 @@ class Layout
         return $this;
     }
 
+
+    /**
+     * Generate the head section
+     *
+     * @return array
+     */
+    public function generateHeadElemets()
+    {
+        return (new HeadGenerator())->generate($this->layoutStack, $this);
+    }
+
+
     /**
      * Get all blocks marked for output
      *
-     * @return array ['head' => '' ,'body' => '']
+     * @return array ['head' => [] ,'body' => '']
      */
     public function getOutput()
     {
@@ -291,7 +317,7 @@ class Layout
         foreach ($this->_output as $name) {
             $out .= $this->renderElement($name);
         }
-        $head = (new HeadGenerator())->generate($this->layoutStack, $this);
+        $head = $this->generateHeadElemets();
         return ['head' => $head, 'body' => $out];
     }
 

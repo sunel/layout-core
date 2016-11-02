@@ -175,6 +175,7 @@ class Update
     {
         $this->handles = [];
         $this->updates = [];
+        $this->layoutUpdatesCache = [];
         return $this;
     }
 
@@ -346,7 +347,6 @@ class Update
         $result = $this->loadCache($cacheId);
         if (!$result) {
             $fileLocations = $this->config->get('xml_location.'.$section);
-
             if (empty($fileLocations)) {
                 throw new InvalidArgumentException("Layout file location for `{$section}` section is not given.");
             }

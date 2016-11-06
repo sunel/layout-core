@@ -100,8 +100,7 @@ class Head
     protected function renderCssAssets(LayoutStack $stack)
     {
         $result = $this->renderAssets($stack);
-        unset($result['js']);
-        return implode('', $result);
+        return $result['css'];
     }
 
     /**
@@ -128,7 +127,7 @@ class Head
                 $attributes = array_diff_key($asset,array_flip(['src','content_type']));
                 $attributes = $this->getAttributes($attributes);
                 $assetTemplate = $this->getAssetTemplate($asset['content_type'],$attributes);
-                $result[$asset['content_type']] .= sprintf($assetTemplate, $asset['src']);
+                $result[$asset['content_type']] .= str_replace('%s', $asset['src'], $assetTemplate);
             }
             $this->resultAsset = $result;
         }
@@ -144,14 +143,14 @@ class Head
     {
         switch ($contentType) {
             case 'js':
-                $groupTemplate = '<script ' . $attributes . ' src="%s"></script>' . "\n";
+                $groupTemplate = '<script ' . $attributes . ' src="%baseurl%s"></script>' . "\n";
                 break;
             case 'base':
                 $groupTemplate = '<base ' . $attributes . ' href="%s" />' . "\n"; 
                 break;  
             case 'css':
             default:
-                $groupTemplate = '<link ' . $attributes . ' href="%s" />' . "\n";
+                $groupTemplate = '<link ' . $attributes . ' href="%baseurl%s" />' . "\n";
                 break;
         }
         return $groupTemplate;

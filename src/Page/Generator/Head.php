@@ -27,8 +27,7 @@ class Head
         $result['meta'] = $this->renderMetadata($stack);
         $result['title'] = $this->renderTitle($stack);
         $stack->processRemoveAssets();
-        $result['js'] = $this->renderJsAssets($stack);
-        $result['css'] = $this->renderCssAssets($stack);
+        $result = array_merge($result, $this->renderAssets($stack));
         $result['head_includes'] = $layout->getConfigObject()->get('head.includes', '');    
         return $result;
     }
@@ -92,28 +91,6 @@ class Head
         return $metadataTemplate;
     }
 
-    /**
-     * 
-     * @param Layout\Core\Data\LayoutStack $stack
-     * @return string
-     */
-    protected function renderCssAssets(LayoutStack $stack)
-    {
-        $result = $this->renderAssets($stack);
-        return $result['css'];
-    }
-
-    /**
-     * 
-     * @param Layout\Core\Data\LayoutStack $stack
-     * @return string
-     */
-    protected function renderJsAssets(LayoutStack $stack)
-    {
-        $result = $this->renderAssets($stack);
-        return $result['js'];
-    }
-
      /**
      * 
      * @param Layout\Core\Data\LayoutStack $stack
@@ -122,11 +99,15 @@ class Head
     protected function renderAssets(LayoutStack $stack)
     {
         if(empty($this->resultAsset)) {
-            $result = array_fill_keys(['base', 'css','ioc','link','js'], '');
+            $result = [];
             foreach ($stack->getAssets() as $asset) {
                 $attributes = array_diff_key($asset,array_flip(['src','content_type']));
                 $attributes = $this->getAttributes($attributes);
                 $assetTemplate = $this->getAssetTemplate($asset['content_type'],$attributes);
+
+                if(!isset($result[$asset['content_type']])) {
+                    $result[$asset['content_type']] = '';
+                }
                 $result[$asset['content_type']] .= str_replace('%s', $asset['src'], $assetTemplate);
             }
             $this->resultAsset = $result;
@@ -147,10 +128,12 @@ class Head
                 break;
             case 'base':
                 $groupTemplate = '<base ' . $attributes . ' href="%s" />' . "\n"; 
-                break;  
+                break; 
             case 'css':
-            default:
                 $groupTemplate = '<link ' . $attributes . ' href="%baseurl%s" />' . "\n";
+                break;
+            default:
+                $groupTemplate = '<'. $contentType . $attributes . ' ref="%baseurl%s" />' . "\n";
                 break;
         }
         return $groupTemplate;

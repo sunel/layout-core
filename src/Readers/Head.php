@@ -76,7 +76,10 @@ class Head implements ReaderInterface
                         $node->getAttribute('value')
                     );
                     break;
-
+                default:
+                    $node->addAttribute('content_type', $node->getName());
+                    $stack->addAssets($node->getAttribute('src'), $this->getAttributes($node));
+                    break;
             }
         }
     }

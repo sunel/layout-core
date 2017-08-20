@@ -379,6 +379,9 @@ class Update
      */
     protected function getFileLayoutXml($locations)
     {
+
+        $locations = $this->arrayFlatten($locations);
+
         $layoutStr = '';
         $finder = Finder::create()->files();
         $finder->name('*.xml')
@@ -467,6 +470,27 @@ class Update
         }
 
         return $result;
+    }
+
+    /**
+     * Convert a multi-dimensional array into a single-dimensional array.
+     * @author Sean Cannon, LitmusBox.com | seanc@litmusbox.com
+     * @param  array $array The multi-dimensional array.
+     * @return array
+     */
+    protected function arrayFlatten($array) { 
+      if (!is_array($array)) { 
+        return false; 
+      } 
+      $result = array(); 
+      foreach ($array as $key => $value) { 
+        if (is_array($value)) { 
+          $result = array_merge($result, $this->arrayFlatten($value)); 
+        } else { 
+          $result[$key] = $value; 
+        } 
+      } 
+      return $result; 
     }
 
     /**

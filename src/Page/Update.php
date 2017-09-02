@@ -175,6 +175,7 @@ class Update
     {
         $this->handles = [];
         $this->updates = [];
+        $this->layoutHandles = [];
         $this->layoutUpdatesCache = [];
         return $this;
     }

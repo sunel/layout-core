@@ -429,10 +429,25 @@ class Update
      *
      * @param string $xmlString
      * @return \SimpleXMLElement
+     * @throws \UnexpectedValueException
      */
     protected function _loadXmlString($xmlString)
     {
-        return simplexml_load_string($xmlString, Element::class);
+
+        $internalErrors = libxml_use_internal_errors(true);
+        $disableEntities = libxml_disable_entity_loader(true);
+        libxml_clear_errors();
+
+        $xml = simplexml_load_string($xmlString, Element::class);
+
+        libxml_use_internal_errors($internalErrors);
+        libxml_disable_entity_loader($disableEntities);
+
+        if ($error = libxml_get_last_error()) {
+            throw new \UnexpectedValueException($error->message);
+        }
+
+        return $xml;
     }
 
     /**

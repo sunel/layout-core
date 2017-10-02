@@ -17,6 +17,19 @@ use Layout\Core\Contracts\EventsDispatcher as Dispatcher;
 
 class Layout
 {
+    /**#@+
+     * Constants of available types
+     */
+    const ELEMENT_TYPE_BODY = 'body';
+    const ELEMENT_TYPE_HTML = 'html';
+    const ELEMENT_TYPE_HEAD = 'head';
+    /**#@-*/
+
+    /**
+     * Constant body attribute class
+     */
+    const BODY_ATTRIBUTE_CLASS = 'class';
+
     /**
      * The event dispatcher instance.
      *
@@ -305,11 +318,44 @@ class Layout
         return (new HeadGenerator())->generate($this->layoutStack, $this);
     }
 
+    /**
+     * @param string $elementType
+     * @return string
+     */
+    public function renderElementAttributes($elementType)
+    {
+        $resultAttributes = [];
+        foreach ($this->layoutStack->getElementAttributes($elementType) as $name => $value) {
+            $resultAttributes[] = sprintf('%s="%s"', $name, $value);
+        }
+        return implode(' ', $resultAttributes);
+    }
+
+    /**
+     * Add CSS class to page body tag
+     *
+     * @param string $className
+     * @return $this
+     */
+    public function addBodyClass($className)
+    {
+        $className = preg_replace('#[^a-z0-9]+#', '-', strtolower($className));
+        $bodyClasses = $this->layoutStack->getBodyClasses();
+        $bodyClasses[] = $className;
+        $bodyClasses = array_unique($bodyClasses);
+        $this->layoutStack->setElementAttribute(
+            self::ELEMENT_TYPE_BODY,
+            self::BODY_ATTRIBUTE_CLASS,
+            implode(' ', $bodyClasses)
+        );
+        return $this;
+    }
+
 
     /**
      * Get all blocks marked for output
      *
-     * @return array ['head' => [] ,'body' => '']
+     * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
      */
     public function getOutput()
     {
@@ -318,7 +364,8 @@ class Layout
             $out .= $this->renderElement($name);
         }
         $head = $this->generateHeadElemets();
-        return ['head' => $head, 'body' => $out];
+
+        return ['head' => $head, 'body' => $out, 'bodyAttributes' => $this->renderElementAttributes(self::ELEMENT_TYPE_BODY)];
     }
 
     /**

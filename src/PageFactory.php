@@ -81,7 +81,7 @@ class PageFactory
     /**
      * Render current layout and return the resonse string
      *
-     * @return array ['head' => [] ,'body' => '']
+     * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
      */
     public function render()
     {
@@ -129,7 +129,7 @@ class PageFactory
     /**
      * Render page template.
      *
-     * @return array ['head' => '' ,'body' => '']
+     * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
      */
     public function renderLayout()
     {
@@ -139,6 +139,8 @@ class PageFactory
 
         $this->events->fire('route.layout.render.before');
         $this->events->fire('route.layout.render.before.'.$this->routeHandler());
+
+        $this->getLayout()->addBodyClass($this->routeHandler());
 
         $output = $this->getLayout()->getOutput();
         $this->profiler->stop("$profilerKey::layout_render");

@@ -630,11 +630,28 @@ class LayoutStack
     }
 
     /**
+     * @param string $elementType
      * @return array
      */
-    public function getElementAttributes()
+    public function getElementAttributes($elementType = null)
     {
-        return $this->elementAttributes;
+        if(is_null($elementType)) {
+            return $this->elementAttributes;
+        }
+
+        return isset($this->elementAttributes[$elementType]) ? $this->elementAttributes[$elementType] : [];        
+    }
+
+    /**
+     * Retrieve additional element attribute
+     *
+     * @param string $elementType
+     * @param string $attribute
+     * @return null
+     */
+    public function getElementAttribute($elementType, $attribute)
+    {
+        return isset($this->elementAttributes[$elementType][$attribute]) ? $this->elementAttributes[$elementType][$attribute] : null;
     }
 
     /**

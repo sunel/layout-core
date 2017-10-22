@@ -65,6 +65,14 @@ abstract class AbstractBlock extends Object
     protected $nameInLayout;
 
     /**
+    *
+    * Holds the view template.
+    *
+    * @var string
+    */
+    protected $template;
+
+    /**
      * Assigned variables for view.
      *
      * @var array
@@ -93,6 +101,18 @@ abstract class AbstractBlock extends Object
         $this->config = $config;
         $this->events = $events;
         $this->profiler = $profiler;
+
+        $this->boot();
+    }
+
+    /**
+     * Called after the consttucter is intlized 
+     *
+     * @return void
+     */
+    protected function boot()
+    {
+        //
     }
 
     /**

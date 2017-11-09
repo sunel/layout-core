@@ -89,6 +89,7 @@ abstract class AbstractBlock extends Object
      *
      * @param \Layout\Core\Contracts\Cacheable $cache
      * @param \Layout\Core\Contracts\ConfigResolver $config
+     * @param \Layout\Core\Contracts\EventsDispatcher $events
      * @param \Layout\Core\Contracts\Profiler $profiler
      */
     public function __construct(

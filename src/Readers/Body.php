@@ -46,7 +46,6 @@ class Body implements ReaderInterface
                         $node->getAttribute('value')
                     );
                 }
-                continue;
             }
         }
         $this->nodeReader->read($stack, $element);

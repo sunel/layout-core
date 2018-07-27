@@ -4,9 +4,9 @@ namespace Layout\Core\Page;
 
 use Layout\Core\Object;
 use Layout\Core\Xml\Element;
+use Layout\Core\Data\Stack;
 use Layout\Core\Data\Structure;
 use Layout\Core\Element\Reader;
-use Layout\Core\Data\LayoutStack;
 use Layout\Core\Contracts\Profiler;
 use Layout\Core\Element\NodeReader;
 use Layout\Core\Contracts\Cacheable;
@@ -59,11 +59,11 @@ class Layout
     protected $cache;
 
     /**
-     * Layout Update module.
+     * Layout Manager instance
      *
-     * @var \Layout\Core\Page\Update
+     * @var \Layout\Core\Page\Manager
      */
-    protected $update;
+    protected $manager;
 
     /**
      * layout xml.
@@ -82,7 +82,7 @@ class Layout
     /**
      * Layout stack
      *
-     * @var Layout\Core\Data\LayoutStack
+     * @var Layout\Core\Data\Stack
      */
     protected $layoutStack;
 
@@ -91,21 +91,21 @@ class Layout
      *
      * @var array
      */
-    protected $_blocks = [];
+    protected $blocks = [];
 
     /**
      * Cache of elements to output during rendering
      *
      * @var array
      */
-    protected $_output = [];
+    protected $output = [];
 
     /**
      * Cache of generated elements' HTML
      *
      * @var array
      */
-    protected $_renderElementCache = [];
+    protected $renderElementCache = [];
 
     /**
      * Create a new layout instance.
@@ -125,9 +125,9 @@ class Layout
         $this->config = $config;
         $this->profiler = $profiler;
         $this->cache = $cache;
-        $this->update = new Update($events, $config, $profiler, $cache);
+        $this->manager = new Manager($events, $config, $profiler, $cache);
         $this->structure = new Structure([]);
-        $this->layoutStack = new LayoutStack;
+        $this->layoutStack = new Stack;
     }
 
     /**
@@ -171,9 +171,9 @@ class Layout
      *
      * @return \Layout\Core\Page\Update
      */
-    public function getUpdate()
+    public function manager()
     {
-        return $this->update;
+        return $this->manager;
     }
 
     /**
@@ -223,10 +223,10 @@ class Layout
      */
     public function generateXml()
     {
-        $xml = $this->getUpdate()->asSimplexml();
+        $xml = $this->manager()->asSimplexml();
         $this->setXml($xml);
         $this->structure->importElements([]);
-        $this->layoutStack = new LayoutStack();
+        $this->layoutStack = new Stack();
         return $this;
     }
 
@@ -235,11 +235,11 @@ class Layout
      *
      * @return $this
      */
-    public function resetLayout()
+    public function reset()
     {
-        $this->getUpdate()->resetHandle();
-        $this->_output = [];
-        $this->_renderElementCache = [];
+        $this->manager()->resetHandle();
+        $this->output = [];
+        $this->renderElementCache = [];
         return $this;
     }
 
@@ -250,14 +250,14 @@ class Layout
      */
     public function generatePageElements()
     {
-        $cacheId = 'structure_' . $this->getUpdate()->getCacheId();
+        $cacheId = 'structure_' . $this->manager()->getCacheId();
         $result = $this->loadCache($cacheId);
         if ($result) {
             $this->layoutStack = unserialize($result);
         } else {
             $reader = new NodeReader($this->config->get('layout.element.readers', []));
             $reader->read($this->layoutStack, $this->getNode());
-            $this->saveCache(serialize($this->layoutStack), $cacheId, $this->getUpdate()->getHandles());
+            $this->saveCache(serialize($this->layoutStack), $cacheId, $this->manager()->getHandles());
         }
         
         $body = new BodyGenerator($this->config->get('layout.body.generators', []), $this);
@@ -289,7 +289,7 @@ class Layout
      */
     public function addOutputElement($name)
     {
-        $this->_output[$name] = $name;
+        $this->output[$name] = $name;
         return $this;
     }
 
@@ -301,8 +301,8 @@ class Layout
      */
     public function removeOutputElement($name)
     {
-        if (isset($this->_output[$name])) {
-            unset($this->_output[$name]);
+        if (isset($this->output[$name])) {
+            unset($this->output[$name]);
         }
         return $this;
     }
@@ -360,7 +360,7 @@ class Layout
     public function getOutput()
     {
         $out = '';
-        foreach ($this->_output as $name) {
+        foreach ($this->output as $name) {
             $out .= $this->renderElement($name);
         }
         $head = $this->generateHeadElemets();
@@ -377,15 +377,15 @@ class Layout
      */
     public function renderElement($name, $useCache = true)
     {
-        if (!isset($this->_renderElementCache[$name]) || !$useCache) {
+        if (!isset($this->renderElementCache[$name]) || !$useCache) {
             if ($this->displayElement($name)) {
-                $this->_renderElementCache[$name] = $this->renderNonCachedElement($name);
+                $this->renderElementCache[$name] = $this->renderNonCachedElement($name);
             } else {
-                return $this->_renderElementCache[$name] = '';
+                return $this->renderElementCache[$name] = '';
             }
         }
         $transport = new Object();
-        $transport->setData('output', $this->_renderElementCache[$name]);
+        $transport->setData('output', $this->renderElementCache[$name]);
 
         $this->events->fire(
             'layout.render.element',
@@ -424,9 +424,9 @@ class Layout
         $result = '';
         try {
             if ($this->isBlock($name)) {
-                $result = $this->_renderBlock($name);
+                $result = $this->renderBlock($name);
             } else {
-                $result = $this->_renderContainer($name);
+                $result = $this->renderContainer($name);
             }
         } catch (\Exception $e) {
             throw $e;
@@ -441,7 +441,7 @@ class Layout
      * @return string
      * @throws \Exception
      */
-    protected function _renderBlock($name)
+    protected function renderBlock($name)
     {
         $block = $this->getBlock($name);
         return $block ? $block->toHtml() : '';
@@ -453,7 +453,7 @@ class Layout
      * @param string $name
      * @return string
      */
-    protected function _renderContainer($name)
+    protected function renderContainer($name)
     {
         $html = '';
         $children = $this->getChildNames($name);
@@ -490,7 +490,7 @@ class Layout
      */
     public function setBlock($name, $block)
     {
-        $this->_blocks[$name] = $block;
+        $this->blocks[$name] = $block;
         return $this;
     }
 
@@ -502,8 +502,8 @@ class Layout
      */
     public function getBlock($name)
     {
-        if (isset($this->_blocks[$name])) {
-            return $this->_blocks[$name];
+        if (isset($this->blocks[$name])) {
+            return $this->blocks[$name];
         } else {
             return false;
         }
@@ -516,7 +516,7 @@ class Layout
      */
     public function getAllBlocks()
     {
-        return $this->_blocks;
+        return $this->blocks;
     }
 
     /**
@@ -622,11 +622,11 @@ class Layout
      */
     public function renameElement($oldName, $newName)
     {
-        if (isset($this->_blocks[$oldName])) {
-            $block = $this->_blocks[$oldName];
-            $this->_blocks[$oldName] = null;
-            unset($this->_blocks[$oldName]);
-            $this->_blocks[$newName] = $block;
+        if (isset($this->blocks[$oldName])) {
+            $block = $this->blocks[$oldName];
+            $this->blocks[$oldName] = null;
+            unset($this->blocks[$oldName]);
+            $this->blocks[$newName] = $block;
         }
         $this->structure->renameElement($oldName, $newName);
 
@@ -718,9 +718,9 @@ class Layout
      */
     public function __destruct()
     {
-        $this->update->__destruct();
-        $this->update = null;
-        $this->_blocks = [];
+        $this->manager->__destruct();
+        $this->manager = null;
+        $this->blocks = [];
         $this->xmlTree = null;
     }
 }

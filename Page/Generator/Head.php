@@ -2,7 +2,7 @@
 
 namespace Layout\Core\Page\Generator;
 
-use Layout\Core\Data\LayoutStack;
+use Layout\Core\Data\Stack;
 use Layout\Core\Page\Layout;
 
 class Head
@@ -17,11 +17,11 @@ class Head
     /**
      * Genrate the head section and return it
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Page\Layout $layout
      * @return array
      */
-    public function generate(LayoutStack $stack, Layout $layout)
+    public function generate(Stack $stack, Layout $layout)
     {
         $result = [];
         $result['meta'] = $this->renderMetadata($stack);
@@ -34,20 +34,20 @@ class Head
 
     /**
      * 
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @return string
      */
-    protected function renderTitle(LayoutStack $stack)
+    protected function renderTitle(Stack $stack)
     {
         return '<title>' . htmlspecialchars($stack->getTitle(), ENT_COMPAT, 'UTF-8', false) . '</title>' . "\n";
     }
 
     /**
      * 
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @return string
      */
-    protected function renderMetadata(LayoutStack $stack)
+    protected function renderMetadata(Stack $stack)
     {
         $result = '';
         foreach ($stack->getMetadata() as $name => $content) {
@@ -93,10 +93,10 @@ class Head
 
      /**
      * 
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @return string
      */
-    protected function renderAssets(LayoutStack $stack)
+    protected function renderAssets(Stack $stack)
     {
         if(empty($this->resultAsset)) {
             $result = [];

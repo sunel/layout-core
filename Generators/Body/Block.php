@@ -3,41 +3,34 @@
 namespace Layout\Core\Generators\Body;
 
 use Layout\Core\Data\Structure;
-use Layout\Core\Data\LayoutStack;
 
 class Block extends AbstractGenrator
 {
     /**
      * {@inheritDoc}
      */
-    public function generate(LayoutStack $stack, Structure $structure)
+    public function generate($elementName, $type, $data, Structure $structure)
     {
-        $layout = $this->bodyGenerator->getLayout();
+        $layout = $this->bodyGenerator->layout();
 
         $blocks = [];
         $blockActions = [];
-        // Instantiate blocks and collect all actions data
-        foreach ($stack->getElements() as $elementName => $element) {
-            list($type, $data) = $element;
-            if ($type === 'block') {
-                try {
-                    $block = $this->generateBlock($stack, $structure, $elementName);
-                    $blocks[$elementName] = $block;
-                    $layout->setBlock($elementName, $block);
-                    try {
-                        $block->setLayout($layout);
-                        if (!empty($data['actions'])) {
-                            $blockActions[$elementName] = $data['actions'];
-                        }
-                    } catch (\Exception $e) {
-                        throw $e;
-                    }
-                    $stack->unsetElement($elementName);
-                } catch (\Exception $e) {
-                    throw $e;
-                    unset($blocks[$elementName]);
+
+        try {
+            $block = $this->generateBlock($data, $structure, $elementName);
+            $blocks[$elementName] = $block;
+            $layout->setBlock($elementName, $block);
+            try {
+                $block->setLayout($layout);
+                if (!empty($data['actions'])) {
+                    $blockActions[$elementName] = $data['actions'];
                 }
-            }
+            } catch (\Exception $e) {
+                throw $e;
+            }            
+        } catch (\Exception $e) {
+            throw $e;
+            unset($blocks[$elementName]);
         }
         
         // Run all actions after layout initialization
@@ -67,11 +60,10 @@ class Block extends AbstractGenrator
      * @return \Layout\Core\Block\AbstractBlock
      */
     protected function generateBlock(
-        LayoutStack $stack,
+        $data,
         Structure $structure,
         $elementName
     ) {
-        list(, $data) = $stack->getElement($elementName);
         $attributes = $data['attributes'];
 
         if (!empty($attributes['group'])) {
@@ -83,7 +75,7 @@ class Block extends AbstractGenrator
 
         // create block
         $className = $attributes['class'];
-        $block = $this->bodyGenerator->getLayout()->createBlock($className, $elementName, []);
+        $block = $this->bodyGenerator->layout()->createBlock($className, $elementName, []);
         if (!empty($attributes['template'])) {
             $block->setTemplate($attributes['template']);
         }

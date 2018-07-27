@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Layout\\Core\\": "src/"
+            "Layout\\Core\\": "./"
         }
     }
 }

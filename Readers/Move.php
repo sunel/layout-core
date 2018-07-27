@@ -3,7 +3,7 @@
 namespace Layout\Core\Readers;
 
 use Layout\Core\Xml\Element;
-use Layout\Core\Data\LayoutStack;
+use Layout\Core\Data\Stack;
 use Layout\Core\Element\NodeReader;
 use Layout\Core\Contracts\ReaderInterface;
 
@@ -27,11 +27,11 @@ class Move implements ReaderInterface
     /**
      * Traverse through all nodes
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Xml\Element $element
      * @return $this
      */
-    public function read(LayoutStack $stack, Element $element)
+    public function read(Stack $stack, Element $element)
     {
         $this->scheduleMove($stack, $element);
     }
@@ -39,11 +39,11 @@ class Move implements ReaderInterface
    /**
      * Process block element their attributes and children
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Xml\Element $currentElement
      * @return $this
      */
-    protected function scheduleMove(LayoutStack $stack, Element $currentElement)
+    protected function scheduleMove(Stack $stack, Element $currentElement)
     {
         $elementName = (string)$currentElement->getAttribute('element');
         $destination = (string)$currentElement->getAttribute('destination');

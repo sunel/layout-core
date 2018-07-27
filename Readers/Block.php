@@ -3,7 +3,7 @@
 namespace Layout\Core\Readers;
 
 use Layout\Core\Xml\Element;
-use Layout\Core\Data\LayoutStack;
+use Layout\Core\Data\Stack;
 use Layout\Core\Element\NodeReader;
 use Layout\Core\Contracts\ReaderInterface;
 
@@ -27,11 +27,11 @@ class Block implements ReaderInterface
     /**
      * Traverse through all nodes
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Xml\Element $element
      * @return $this
      */
-    public function read(LayoutStack $stack, Element $element)
+    public function read(Stack $stack, Element $element)
     {
         switch ($element->getName()) {
             case 'block':
@@ -50,11 +50,11 @@ class Block implements ReaderInterface
     /**
      * Process block element their attributes and children
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Xml\Element $currentElement
      * @return $this
      */
-    protected function scheduleBlock(LayoutStack $stack, Element $currentElement)
+    protected function scheduleBlock(Stack $stack, Element $currentElement)
     {
         $elementName = $this->nodeReader->scheduleStructure(
             $stack,
@@ -74,12 +74,12 @@ class Block implements ReaderInterface
     /**
      * Schedule reference data
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Xml\Element $currentElement
      * @return void
      */
     protected function scheduleReference(
-        LayoutStack $stack,
+        Stack $stack,
         Element $currentElement
     ) {
         $elementName = $currentElement->getAttribute('name');

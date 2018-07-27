@@ -4,7 +4,7 @@ namespace Layout\Core\Data;
 
 use Exception;
 
-class LayoutStack
+class Stack
 {
     /**#@+
      * Keys for array of elements to sort

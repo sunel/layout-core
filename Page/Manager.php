@@ -11,7 +11,7 @@ use Symfony\Component\Finder\Finder;
 use Layout\Core\Contracts\ConfigResolver;
 use Layout\Core\Contracts\EventsDispatcher as Dispatcher;
 
-class Update
+class Manager
 {
     /**
      * Additional tag for cleaning layout cache convenience.
@@ -137,6 +137,21 @@ class Update
     }
 
     /**
+     * Get layout updates as \Layout\Core\Xml\Element object
+     *
+     * @return \SimpleXMLElement
+     */
+    public function asSimplexml()
+    {
+        $updates = trim($this->asString());
+        $updates = '<?xml version="1.0"?>'
+            . '<layout xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+            . $updates
+            . '</layout>';
+        return $this->loadXmlString($updates);
+    }
+
+    /**
      * Add handle(s) to update
      *
      * @param array|string $handleName
@@ -191,21 +206,6 @@ class Update
     }
 
     /**
-     * Get layout updates as \Layout\Core\Xml\Element object
-     *
-     * @return \SimpleXMLElement
-     */
-    public function asSimplexml()
-    {
-        $updates = trim($this->asString());
-        $updates = '<?xml version="1.0"?>'
-            . '<layout xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
-            . $updates
-            . '</layout>';
-        return $this->_loadXmlString($updates);
-    }
-
-    /**
      * Get cache id.
      *
      * @return string
@@ -215,9 +215,9 @@ class Update
         return 'LAYOUT_'.md5(implode('__', $this->getHandles()));
     }
 
-    public function collectHandlesFromUpdates()
+    public function collectHandles()
     {
-        $layout = $this->getFileLayoutUpdatesXml();
+        $this->getLayoutXml();
 
         return $this->layoutHandles;
     }
@@ -249,12 +249,53 @@ class Update
         
         $this->collectHandleUpdates();
 
-        $this->_merge($this->pageLayout);
+        $this->fetchLayoutUpdates($this->pageLayout);
 
         $this->saveCache($this->asString(), $cacheId, $this->getHandles());
         $this->saveCache((string)$this->pageLayout, $cacheIdPageLayout, $this->getHandles());
 
         return $this;
+    }
+
+    /**
+     * Retrieve already merged layout updates from files for specified area
+     *
+     * @return \Layout\Core\Xml\Element
+     */
+    public function getLayoutXml()
+    {
+        $section = $this->config->get('handle_layout_section');
+
+        if (isset($this->layoutUpdatesCache[$section])) {
+            return $this->layoutUpdatesCache[$section];
+        }
+
+        $cacheId = "LAYOUT_{$section}";
+        $layoutXml = $this->loadCache($cacheId);
+        if (!$layoutXml) {
+            $fileLocations = $this->config->get('xml_location.'.$section);
+            if (empty($fileLocations)) {
+                throw new InvalidArgumentException("Layout file location for `{$section}` section is not given.");
+            }
+
+            if (!is_array($fileLocations)) {
+                $fileLocations = [$fileLocations];
+            }
+
+            $result = $this->loadXml($fileLocations);
+            $this->layoutHandles = $result[0];
+            $layoutXml = $result[1];
+
+            $this->saveCache($layoutXml, $cacheId);
+            $this->saveCache(json_encode($this->layoutHandles), $cacheId.'_handles_found');
+        } else {
+            $handlesFound = $this->loadCache($cacheId.'_handles_found');
+            $this->layoutHandles = json_decode($handlesFound, true);
+        }
+
+        $layoutXml = '<layouts xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' . $layoutXml . '</layouts>';
+        $this->layoutUpdatesCache[$section] = $this->loadXmlString($layoutXml);
+        return $this->layoutUpdatesCache[$section];
     }
 
     /**
@@ -271,7 +312,7 @@ class Update
         $this->profiler->start($profilerKey);
 
         foreach ($handles as $handle) {
-            $this->_merge($handle);
+            $this->fetchLayoutUpdates($handle);
         }
 
         $this->profiler->stop($profilerKey);
@@ -280,26 +321,14 @@ class Update
     }
 
     /**
-     * Collect and merge layout updates from file.
-     *
-     * @param string $handles
-     * @return bool
-     */
-    protected function _merge($handle)
-    {
-        $this->fetchPackageLayoutUpdates($handle);
-        return true;
-    }
-
-    /**
      * Add updates for the specified handle
      *
      * @param string $handle
      * @return bool
      */
-    protected function fetchPackageLayoutUpdates($handle)
+    protected function fetchLayoutUpdates($handle)
     {
-        $layout = $this->getFileLayoutUpdatesXml();
+        $layout = $this->getLayoutXml();
         foreach ($layout->xpath("*[self::handle or self::layout][@id='{$handle}']") as $updateXml) {
             $this->fetchRecursiveUpdates($updateXml);
             $this->addUpdate($updateXml->innerXml());
@@ -320,7 +349,7 @@ class Update
             if (isset($child['handle'])) {
                 $handle = (string) $child['handle'];
                 if (!isset($this->handles[$handle])) {
-                    $this->_merge($handle);
+                    $this->fetchLayoutUpdates($handle);
                     $this->addHandle($handle);
                 }
             }
@@ -331,54 +360,14 @@ class Update
         return $this;
     }
 
-    /**
-     * Retrieve already merged layout updates from files for specified area
-     *
-     * @return \Layout\Core\Xml\Element
-     */
-    public function getFileLayoutUpdatesXml()
-    {
-        $section = $this->config->get('handle_layout_section');
-
-        if (isset($this->layoutUpdatesCache[$section])) {
-            return $this->layoutUpdatesCache[$section];
-        }
-
-        $cacheId = "LAYOUT_{$section}";
-        $result = $this->loadCache($cacheId);
-        if (!$result) {
-            $fileLocations = $this->config->get('xml_location.'.$section);
-            if (empty($fileLocations)) {
-                throw new InvalidArgumentException("Layout file location for `{$section}` section is not given.");
-            }
-
-            if (!is_array($fileLocations)) {
-                $fileLocations = [$fileLocations];
-            }
-
-            $result = $this->getFileLayoutXml($fileLocations);
-            $this->saveCache($result, $cacheId);
-            $this->saveCache(json_encode($this->layoutHandles), $cacheId.'_handles_found');
-        } else {
-            $handlesFound = $this->loadCache($cacheId.'_handles_found');
-            $this->layoutHandles = json_decode($handlesFound, true);
-        }
-
-        $result = '<layouts xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' . $result . '</layouts>';
-        $this->layoutUpdatesCache[$section] = $this->_loadXmlString($result);
-        return $this->layoutUpdatesCache[$section];
-    }
-
 
     /**
      * Collect and merge layout updates from files
      *
-     * @param array $fileLocations
-     * @param array $handles
-     * @param array $nothandles
-     * @return string
+     * @param array $locations
+     * @return array [ $layoutHandles, $layoutStr ] 
      */
-    protected function getFileLayoutXml($locations)
+    protected function loadXml($locations)
     {
 
         $locations = $this->arrayFlatten($locations);
@@ -388,9 +377,11 @@ class Update
         $finder->name('*.xml')
                 ->in($locations);
 
+        $layoutHandles = [];
+
         foreach ($finder as $file) {
             $fileStr = $file->getContents();
-            $fileXml = $this->_loadXmlString($fileStr);
+            $fileXml = $this->loadXmlString($fileStr);
 
             if (!$fileXml instanceof SimpleXMLElement) {
                 continue;
@@ -399,14 +390,14 @@ class Update
             $handleName = basename($file->getFilename(), '.xml');
             $tagName = $fileXml->getName() === 'layout' ? 'layout' : 'handle';
             if($tagName == 'handle') {
-                $this->layoutHandles[] = $handleName;
+                $layoutHandles[] = $handleName;
             }
-            $handleAttributes = ' id="' . $handleName . '"' . $this->_renderXmlAttributes($fileXml);
+            $handleAttributes = ' id="' . $handleName . '"' . $this->renderXmlAttributes($fileXml);
             $handleStr = '<' . $tagName . $handleAttributes . '>' . $fileXml->innerXml() . '</' . $tagName . '>';
             $layoutStr .= $handleStr;
         }
 
-        return $layoutStr;
+        return [$layoutHandles, $layoutStr];
     }
 
     /**
@@ -415,7 +406,7 @@ class Update
      * @param \SimpleXMLElement $node
      * @return string
      */
-    protected function _renderXmlAttributes(\SimpleXMLElement $node)
+    protected function renderXmlAttributes(\SimpleXMLElement $node)
     {
         $result = '';
         foreach ($node->attributes() as $attributeName => $attributeValue) {
@@ -431,7 +422,7 @@ class Update
      * @return \SimpleXMLElement
      * @throws \UnexpectedValueException
      */
-    protected function _loadXmlString($xmlString)
+    protected function loadXmlString($xmlString)
     {
 
         $internalErrors = libxml_use_internal_errors(true);

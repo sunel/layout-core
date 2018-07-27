@@ -4,7 +4,7 @@ namespace Layout\Core\Readers;
 
 use Layout\Core\Xml\Element;
 use Layout\Core\Element\NodeReader;
-use Layout\Core\Data\LayoutStack;
+use Layout\Core\Data\Stack;
 use Layout\Core\Contracts\ReaderInterface;
 
 class Body implements ReaderInterface
@@ -27,11 +27,11 @@ class Body implements ReaderInterface
     /**
      * Traverse through all nodes
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Xml\Element $element
      * @return $this
      */
-    public function read(LayoutStack $stack, Element $element)
+    public function read(Stack $stack, Element $element)
     {
         /** @var $node Layout\Core\Xml\Element */
         foreach ($element as $node) {

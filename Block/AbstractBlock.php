@@ -107,7 +107,7 @@ abstract class AbstractBlock extends Object
     }
 
     /**
-     * Called after the consttucter is intlized 
+     * Called after the constructor is initilized 
      *
      * @return void
      */
@@ -209,7 +209,7 @@ abstract class AbstractBlock extends Object
      * @return \Layout\Core\Page\Layout
      * @throws \Exception
      */
-    public function getLayout()
+    public function layout()
     {
         if (!$this->layout) {
             throw new \Exception('Layout must be initialized');
@@ -392,14 +392,14 @@ abstract class AbstractBlock extends Object
     }
 
     /**
-     * Render output of child child element
+     * Render output of child's child element
      *
      * @param string $alias
      * @param string $childChildAlias
      * @param bool $useCache
      * @return string
      */
-    public function getChildChildHtml($alias, $childChildAlias = '', $useCache = true)
+    public function getInnerChildHtml($alias, $childChildAlias = '', $useCache = true)
     {
         $layout = $this->getLayout();
         if (!$layout) {
@@ -492,18 +492,6 @@ abstract class AbstractBlock extends Object
         return [
             $this->getNameInLayout(),
         ];
-    }
-
-     /**
-     * set the cache life time
-     *
-     * @return array
-     */
-    public function addCacheKeyInfo($info)
-    {
-        $this->setData('cache_lifetime', $info);
-
-        return $this;
     }
 
     /**
@@ -650,7 +638,7 @@ abstract class AbstractBlock extends Object
      *
      * @return \Layout\Core\Block\AbstractBlock
      */
-    protected function _beforeToHtml()
+    protected function beforeToHtml()
     {
         return $this;
     }
@@ -669,13 +657,13 @@ abstract class AbstractBlock extends Object
         $html = $this->_loadCache();
 
         if ($html === false) {
-            $this->_beforeToHtml();
+            $this->beforeToHtml();
             $html = $this->_toHtml();
 
             $this->_saveCache($html);
         }
 
-        $html = $this->_afterToHtml($html);
+        $html = $this->afterToHtml($html);
 
         /*
          * Use single transport object instance for all blocks
@@ -715,7 +703,7 @@ abstract class AbstractBlock extends Object
      *
      * @return string
      */
-    protected function _afterToHtml($html)
+    protected function afterToHtml($html)
     {
         return $html;
     }
@@ -778,7 +766,7 @@ HTML;
     }
 
     /**
-     * Check of the template hite can be shown.
+     * Check if the template hite can be shown.
      *
      * @return bool
      */

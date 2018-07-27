@@ -4,7 +4,7 @@ namespace Layout\Core\Page\Generator;
 
 use Layout\Core\Page\Layout;
 use Layout\Core\Data\Structure;
-use Layout\Core\Data\LayoutStack;
+use Layout\Core\Data\Stack;
 
 class Body
 {
@@ -42,9 +42,9 @@ class Body
             'container' => \Layout\Core\Generators\Body\Container::class,
         ], $generators);
 
-        foreach ($generators as $key => $generator) {
-            $this->elementGenerators[$key] = new $generator($this);
-        }
+        $this->elementGenerators = array_map(function($generator) {
+            return new $generator($this);
+        }, $generators);
     }
 
     /**
@@ -52,7 +52,7 @@ class Body
      *
      * @return \Layout\Core\Page\Layout
      */
-    public function getLayout()
+    public function layout()
     {
         return $this->layout;
     }
@@ -60,26 +60,31 @@ class Body
      /**
      * Traverse through all nodes
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Data\Structure $structure
      * @return $this
      */
-    public function generate(LayoutStack $stack, Structure $structure)
+    public function generate(Stack $stack, Structure $structure)
     {
         $this->buildStructure($stack, $structure);
-        foreach ($this->elementGenerators as $generator) {
-            $generator->generate($stack, $structure);
+        foreach ($stack->getElements() as $elementName => $element) {
+            list($type, $data) = $element;
+            if (!isset($this->elementGenerators[$type])) {
+                continue;
+            }
+            $generator = $this->elementGenerators[$type];
+            $generator->generate($elementName, $type, $data, $structure);            
         }
     }
 
     /**
      * Build structure that is based on scheduled structure
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Data\Structure $structure
      * @return $this
      */
-    protected function buildStructure(LayoutStack $stack, Structure $structure)
+    protected function buildStructure(Stack $stack, Structure $structure)
     {
         //Schedule all element into nested structure
         while (false === $stack->isStructureEmpty()) {
@@ -113,13 +118,13 @@ class Body
      * Since layout updates could come in arbitrary order, a case is possible where an element is declared in reference,
      * while referenced element itself is not declared yet.
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Data\Structure $structure
      * @param string $key
      * @return void
      */
     public function scheduleElement(
-        LayoutStack $stack, Structure $structure,
+        Stack $stack, Structure $structure,
         $key
     ) {
         $row = $stack->getStructureElement($key);
@@ -164,53 +169,53 @@ class Body
     /**
      * Reorder a child of a specified element
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Data\Structure $structure
      * @param string $elementName
      * @return void
      */
     protected function reorderElements(
-        LayoutStack $stack, Structure $structure,
+        Stack $stack, Structure $structure,
         $elementName
     ) {
         $element = $stack->getElementToSort($elementName);
-        $stack->unsetElementToSort($element[LayoutStack::ELEMENT_NAME]);
+        $stack->unsetElementToSort($element[Stack::ELEMENT_NAME]);
 
-        if (isset($element[LayoutStack::ELEMENT_OFFSET_OR_SIBLING])) {
+        if (isset($element[Stack::ELEMENT_OFFSET_OR_SIBLING])) {
             $siblingElement = $stack->getElementToSort(
-                $element[LayoutStack::ELEMENT_OFFSET_OR_SIBLING]
+                $element[Stack::ELEMENT_OFFSET_OR_SIBLING]
             );
 
             if (
-                isset($siblingElement[LayoutStack::ELEMENT_NAME])
-                    && $structure->hasElement($siblingElement[LayoutStack::ELEMENT_NAME])
+                isset($siblingElement[Stack::ELEMENT_NAME])
+                    && $structure->hasElement($siblingElement[Stack::ELEMENT_NAME])
             ) {
                 $this->reorderElements(
                     $stack,
                     $structure,
-                    $siblingElement[LayoutStack::ELEMENT_NAME]
+                    $siblingElement[Stack::ELEMENT_NAME]
                 );
             }
         }
 
         $structure->reorderChildElement(
-            $element[LayoutStack::ELEMENT_PARENT_NAME],
-            $element[LayoutStack::ELEMENT_NAME],
-            $element[LayoutStack::ELEMENT_OFFSET_OR_SIBLING],
-            $element[LayoutStack::ELEMENT_IS_AFTER]
+            $element[Stack::ELEMENT_PARENT_NAME],
+            $element[Stack::ELEMENT_NAME],
+            $element[Stack::ELEMENT_OFFSET_OR_SIBLING],
+            $element[Stack::ELEMENT_IS_AFTER]
         );
     }
 
     /**
      * Move element in scheduled structure
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Data\Structure $structure
      * @param string $element
      * @return $this
      */
     protected function moveElementInStructure(
-        LayoutStack $stack, Structure $structure,
+        Stack $stack, Structure $structure,
         $element
     ) {
         list($destination, $siblingName, $isAfter, $alias) = $stack->getElementToMove($element);
@@ -231,14 +236,14 @@ class Body
     /**
      * Remove scheduled element
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param Layout\Core\Data\Stack $stack
      * @param Layout\Core\Data\Structure $structure
      * @param string $elementName
      * @param bool $isChild
      * @return $this
      */
     protected function removeElement(
-        LayoutStack $stack, Structure $structure,
+        Stack $stack, Structure $structure,
         $elementName,
         $isChild = false
     ) {

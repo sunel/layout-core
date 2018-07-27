@@ -3,7 +3,6 @@
 namespace Layout\Core\Generators\Body;
 
 use Layout\Core\Data\Structure;
-use Layout\Core\Data\LayoutStack;
 use Layout\Core\Contracts\Generators\BodyInterface;
 use Layout\Core\Page\Generator\Body as BodyGenerator;
 
@@ -27,9 +26,11 @@ abstract class AbstractGenrator implements BodyInterface
     /**
      * Traverse through all nodes
      *
-     * @param Layout\Core\Data\LayoutStack $stack
+     * @param string $elementName
+     * @param string $type
+     * @param array $data
      * @param Layout\Core\Data\Structure $structure
      * @return $this
      */
-    abstract public function generate(LayoutStack $stack, Structure $structure);
+    abstract public function generate($elementName, $type, $data, Structure $structure);
 }

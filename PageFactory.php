@@ -48,6 +48,13 @@ class PageFactory
     protected $layout;
 
     /**
+     * Holds the current handle for the layout.
+     * 
+     * @var string
+     */
+    protected $currentHandle;
+
+    /**
      * Create a new view factory instance.
      *
      * @param \Layout\Core\Contracts\EventsDispatcher $events
@@ -73,7 +80,7 @@ class PageFactory
      *
      * @return \Layout\Core\Page\Layout
      */
-    public function getLayout()
+    public function layout()
     {
         return $this->layout;
     }
@@ -81,13 +88,16 @@ class PageFactory
     /**
      * Render current layout and return the resonse string
      *
+     * @param string $handle
      * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
      */
-    public function render()
+    public function render($handle)
     {
-        return $this->initLayout()
-                ->buildLayout()
-                ->renderLayout();
+        $this->currentHandle = $handle;
+
+        return $this->init()
+                ->build()
+                ->output();
     }
 
     /**
@@ -95,9 +105,9 @@ class PageFactory
      *
      * @return $this
      */
-    public function resetPage()
+    public function reset()
     {
-        $this->getLayout()->resetLayout();
+        $this->layout()->reset();
         return $this;
     }
 
@@ -106,11 +116,11 @@ class PageFactory
      *
      * @return $this
      */
-    public function initLayout()
+    public function init()
     {
-        $this->addHandle('default');
-        $this->addHandle($this->routeHandler());
-        return $this;
+        return $this->addHandle([
+            'default', $this->currentHandle()
+        ]);
     }
 
     /**
@@ -118,12 +128,11 @@ class PageFactory
      *
      * @return $this
      */
-    public function buildLayout()
+    public function build()
     {
-        $this->loadLayoutUpdates();
-        $this->generateLayoutXml();
-        $this->generateLayoutBlocks();
-        return $this;
+        return $this->loadUpdates()
+            ->generateXml()
+            ->generateBlocks();
     }
 
     /**
@@ -131,19 +140,21 @@ class PageFactory
      *
      * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
      */
-    public function renderLayout()
+    public function output()
     {
-        $profilerKey = self::PROFILER_KEY.'::'.$this->routeHandler();
+        $profilerKey = self::PROFILER_KEY.'::'.$this->currentHandle();
 
         $this->profiler->start("$profilerKey::layout_render");
 
         $this->events->fire('route.layout.render.before');
-        $this->events->fire('route.layout.render.before.'.$this->routeHandler());
+        $this->events->fire('route.layout.render.before.'.$this->currentHandle());
 
-        $this->getLayout()->addBodyClass($this->routeHandler());
+        $this->layout()->addBodyClass($this->currentHandle());
 
-        $output = $this->getLayout()->getOutput();
+        $output = $this->layout()->getOutput();
+        
         $this->profiler->stop("$profilerKey::layout_render");
+
         return $output;
     }
 
@@ -153,7 +164,7 @@ class PageFactory
      */
     public function addHandle($handleName)
     {
-        $this->getLayout()->getUpdate()->addHandle($handleName);
+        $this->layout()->manager()->addHandle($handleName);
         return $this;
     }
 
@@ -162,9 +173,9 @@ class PageFactory
      *
      * @return string
      */
-    public function routeHandler()
+    public function currentHandle()
     {
-        return $this->config->get('current_route_handle');
+        return $this->currentHandle;
     }
 
     /**
@@ -172,16 +183,16 @@ class PageFactory
      *
      * @return $this
      */
-    protected function loadLayoutUpdates()
+    protected function loadUpdates()
     {
-        $profilerKey = self::PROFILER_KEY.'::'.$this->routeHandler();
+        $profilerKey = self::PROFILER_KEY.'::'.$this->currentHandle();
 
         $this->events->fire(
             'route.layout.load.before',
-            ['layout' => $this->getLayout()]
+            ['layout' => $this->layout()]
         );
         $this->profiler->start("$profilerKey::layout_load");
-        $this->getLayout()->getUpdate()->load();
+        $this->layout()->manager()->load();
         $this->profiler->stop("$profilerKey::layout_load");
 
         return $this;
@@ -192,16 +203,16 @@ class PageFactory
      *
      * @return $this
      */
-    protected function generateLayoutXml()
+    protected function generateXml()
     {
-        $profilerKey = self::PROFILER_KEY.'::'.$this->routeHandler();
+        $profilerKey = self::PROFILER_KEY.'::'.$this->currentHandle();
 
         $this->events->fire(
             'route.layout.generate.xml.before',
-            ['layout' => $this->getLayout()]
+            ['layout' => $this->layout()]
         );
         $this->profiler->start("$profilerKey::layout_generate_xml");
-        $this->getLayout()->generateXml();
+        $this->layout()->generateXml();
         $this->profiler->stop("$profilerKey::layout_generate_xml");
 
         return $this;
@@ -212,22 +223,22 @@ class PageFactory
      *
      * @return $this
      */
-    protected function generateLayoutBlocks()
+    protected function generateBlocks()
     {
-        $profilerKey = self::PROFILER_KEY.'::'.$this->routeHandler();
+        $profilerKey = self::PROFILER_KEY.'::'.$this->currentHandle();
         
         $this->profiler->start("$profilerKey::layout_generate_blocks");
         
         $this->events->fire(
             'route.layout.generate.blocks.before',
-            ['layout' => $this->getLayout()]
+            ['layout' => $this->layout()]
         );
 
-        $this->getLayout()->generatePageElements();
+        $this->layout()->generatePageElements();
         
         $this->events->fire(
             'route.layout.generate.blocks.after',
-            ['layout' => $this->getLayout()]
+            ['layout' => $this->layout()]
         );
 
         $this->profiler->stop("$profilerKey::layout_generate_blocks");

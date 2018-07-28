@@ -208,6 +208,17 @@ abstract class AbstractBlock extends Object
         return $this;
     }
 
+
+    /**
+     * Retrieve layout name
+     *
+     * @return  string
+     */
+    public function getNameInLayout()
+    {
+        return $this->nameInLayout;
+    }
+
     /**
      * Retrieve block html
      *

@@ -30,7 +30,7 @@ trait InteractsWithBlocks
      */
     public function insert($element, $siblingName = 0, $after = true, $alias = '')
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return false;
         }
@@ -51,7 +51,7 @@ trait InteractsWithBlocks
      */
     public function getParentBlock()
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return false;
         }
@@ -69,7 +69,7 @@ trait InteractsWithBlocks
      */
     public function getChildNames()
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return [];
         }
@@ -85,7 +85,7 @@ trait InteractsWithBlocks
      */
     public function setChild($alias, $block)
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return $this;
         }
@@ -106,17 +106,22 @@ trait InteractsWithBlocks
      * Create block with name: {parent}.{alias} and set as child
      *
      * @param string $alias
-     * @param string $block
+     * @param string $blockName
      * @param array $data
      * @return $this new block
      */
-    public function addChild($alias, $block, $data = [])
+    public function addChild($alias, $blockName, $data = [])
     {
-        $block = $this->getLayout()->createBlock(
-            $block,
-            $this->getNameInLayout() . '.' . $alias,
+        $name = $this->getNameInLayout() . '.' . $alias;
+        $block = $this->layout()->createBlock(
+            $blockName,
+            $name,
             ['data' => $data]
         );
+
+        $this->layout()->addElement($name, 'block', $blockName);
+        $this->layout()->setBlock($name, $block);
+
         $this->setChild($alias, $block);
         return $block;
     }
@@ -129,7 +134,7 @@ trait InteractsWithBlocks
      */
     public function unsetChild($alias)
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return $this;
         }
@@ -144,7 +149,7 @@ trait InteractsWithBlocks
      */
     public function unsetChildren()
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return $this;
         }
@@ -164,7 +169,7 @@ trait InteractsWithBlocks
      */
     public function getChildBlock($alias)
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return false;
         }
@@ -184,7 +189,7 @@ trait InteractsWithBlocks
      */
     public function getChildHtml($alias = '', $useCache = true)
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return '';
         }
@@ -214,7 +219,7 @@ trait InteractsWithBlocks
      */
     public function getInnerChildHtml($alias, $childChildAlias = '', $useCache = true)
     {
-        $layout = $this->getLayout();
+        $layout = $this->layout();
         if (!$layout) {
             return '';
         }

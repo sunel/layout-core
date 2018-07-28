@@ -52,7 +52,7 @@ class Structure
         $this->_elements = $elements;
         foreach ($elements as $elementId => $element) {
             if (is_numeric($elementId)) {
-                throw new Exception("Element ID must not be numeric: '%1'.", [$elementId]);
+                throw new Exception($this->render("Element ID must not be numeric: '%1'.", [$elementId]));
             }
             $this->assertParentRelation($elementId);
             if (isset($element[self::GROUPS])) {
@@ -61,10 +61,10 @@ class Structure
                 foreach ($groups as $groupName => $group) {
                     $this->assertArray($group);
                     if ($group !== array_flip($group)) {
-                        throw new Exception(
+                        throw new Exception($this->render(
                             "Invalid format of group '%1': %2",
                             [$groupName, var_export($group, 1)]
-                        );
+                        ));
                     }
                     foreach ($group as $groupElementId) {
                         $this->assertElementExists($groupElementId);
@@ -192,10 +192,10 @@ class Structure
             $parentId = $element[self::PARENT];
             $this->assertElementExists($parentId);
             if (empty($this->_elements[$parentId][self::CHILDREN][$elementId])) {
-                throw new Exception(
+                throw new Exception($this->render(
                     "Broken parent-child relation: the '%1' is not in the nested set of '%2'.",
                     [$elementId, $parentId]
-                );
+                ));
             }
         }
 
@@ -204,7 +204,7 @@ class Structure
             $children = $element[self::CHILDREN];
             $this->assertArray($children);
             if ($children !== array_flip(array_flip($children))) {
-                throw new Exception('Invalid format of children: %1', [var_export($children, 1)]);
+                throw new Exception($this->render('Invalid format of children: %1', [var_export($children, 1)]));
             }
             foreach (array_keys($children) as $childId) {
                 $this->assertElementExists($childId);
@@ -212,10 +212,10 @@ class Structure
                     $this->_elements[$childId][self::PARENT]
                 ) || $elementId !== $this->_elements[$childId][self::PARENT]
                 ) {
-                    throw new Exception(
+                    throw new Exception($this->render(
                         "Broken parent-child relation: the '%1' is supposed to have '%2' as parent.",
                         [$childId, $elementId]
-                    );
+                    ));
                 }
             }
         }
@@ -242,7 +242,7 @@ class Structure
     public function createElement($elementId, array $data)
     {
         if (isset($this->_elements[$elementId])) {
-            throw new Exception("Element with ID '%1' already exists.", [$elementId]);
+            throw new Exception($this->render("Element with ID '%1' already exists.", [$elementId]));
         }
         $this->_elements[$elementId] = [];
         foreach ($data as $key => $value) {
@@ -352,7 +352,7 @@ class Structure
     {
         $this->assertElementExists($oldId);
         if (!$newId || isset($this->_elements[$newId])) {
-            throw new Exception("Element with ID '%1' is already defined.", [$newId]);
+            throw new Exception($this->render("Element with ID '%1' is already defined.", [$newId]));
         }
 
         // rename in registry
@@ -392,13 +392,13 @@ class Structure
     public function setAsChild($elementId, $parentId, $alias = '', $position = null)
     {
         if ($elementId == $parentId) {
-            throw new Exception("The '%1' cannot be set as child to itself.", [$elementId]);
+            throw new Exception($this->render("The '%1' cannot be set as child to itself.", [$elementId]));
         }
         if ($this->_isParentRecursively($elementId, $parentId)) {
-            throw new Exception(
+            throw new Exception($this->render(
                 "The '%1' is a parent of '%2' recursively, therefore '%3' cannot be set as child to it.",
                 [$elementId, $parentId, $elementId]
-            );
+            ));
         }
         $this->unsetChild($elementId);
         unset($this->_elements[$parentId][self::CHILDREN][$elementId]);
@@ -627,7 +627,7 @@ class Structure
     {
         $index = array_search($childId, array_keys($this->getChildren($parentId)));
         if (false === $index) {
-            throw new Exception("The '%1' is not a child of '%2'.", [$childId, $parentId]);
+            throw new Exception($this->render("The '%1' is not a child of '%2'.", [$childId, $parentId]));
         }
         return $index;
     }
@@ -677,21 +677,23 @@ class Structure
         // validate
         $this->assertElementExists($elementId);
         if (!empty($this->_elements[$elementId][self::PARENT])) {
-            throw new Exception(
+            throw new Exception($this->render(
                 "The element '%1' already has a parent: '%2'",
                 [$elementId, $this->_elements[$elementId][self::PARENT]]
-            );
+            ));
         }
         $this->assertElementExists($targetParentId);
         $children = $this->getChildren($targetParentId);
         if (isset($children[$elementId])) {
-            throw new Exception("The element '%1' already a child of '%2'", [$elementId, $targetParentId]);
+            throw new Exception($this->render(
+                "The element '%1' already a child of '%2'", [$elementId, $targetParentId]
+            ));
         }
         if (false !== array_search($alias, $children)) {
-            throw new Exception(
+            throw new Exception($this->render(
                 "The element '%1' already has a child with alias '%2'",
                 [$targetParentId, $alias]
-            );
+            ));
         }
 
         // insert
@@ -730,7 +732,37 @@ class Structure
     private function assertArray($value)
     {
         if (!is_array($value)) {
-            throw new Exception("An array expected: %1", [var_export($value, 1)]);
+            throw new Exception($this->render("An array expected: %1", [var_export($value, 1)]));
         }
+    }
+
+    /**
+     * Render source text
+     *
+     * @param string $text
+     * @param array $arguments
+     * @return string
+     */
+    private function render($text, array $arguments)
+    {
+        if ($arguments) {
+            $placeholders = array_map([$this, 'keyToPlaceholder'], array_keys($arguments));
+            $pairs = array_combine($placeholders, $arguments);
+            $text = strtr($text, $pairs);
+        }
+
+        return $text;
+    }
+
+    /**
+     * Get key to placeholder
+     *
+     * @param string|int $key
+     * @return string
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     */
+    private function keyToPlaceholder($key)
+    {
+        return '%' . (is_int($key) ? strval($key + 1) : $key);
     }
 }

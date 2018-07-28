@@ -104,12 +104,12 @@ class Manager
         $this->cache = $cache;
     }
 
-     /**
-     * Add XML update instruction
-     *
-     * @param string $update
-     * @return $this
-     */
+    /**
+    * Add XML update instruction
+    *
+    * @param string $update
+    * @return $this
+    */
     public function addUpdate($update)
     {
         $this->updates[] = $update;
@@ -365,11 +365,10 @@ class Manager
      * Collect and merge layout updates from files
      *
      * @param array $locations
-     * @return array [ $layoutHandles, $layoutStr ] 
+     * @return array [ $layoutHandles, $layoutStr ]
      */
     protected function loadXml($locations)
     {
-
         $locations = $this->arrayFlatten($locations);
 
         $layoutStr = '';
@@ -389,7 +388,7 @@ class Manager
 
             $handleName = basename($file->getFilename(), '.xml');
             $tagName = $fileXml->getName() === 'layout' ? 'layout' : 'handle';
-            if($tagName == 'handle') {
+            if ($tagName == 'handle') {
                 $layoutHandles[] = $handleName;
             }
             $handleAttributes = ' id="' . $handleName . '"' . $this->renderXmlAttributes($fileXml);
@@ -424,7 +423,6 @@ class Manager
      */
     protected function loadXmlString($xmlString)
     {
-
         $internalErrors = libxml_use_internal_errors(true);
         $disableEntities = libxml_disable_entity_loader(true);
         libxml_clear_errors();
@@ -485,19 +483,20 @@ class Manager
      * @param  array $array The multi-dimensional array.
      * @return array
      */
-    protected function arrayFlatten($array) { 
-      if (!is_array($array)) { 
-        return false; 
-      } 
-      $result = array(); 
-      foreach ($array as $key => $value) { 
-        if (is_array($value)) { 
-          $result = array_merge($result, $this->arrayFlatten($value)); 
-        } else { 
-          $result[$key] = $value; 
-        } 
-      } 
-      return $result; 
+    protected function arrayFlatten($array)
+    {
+        if (!is_array($array)) {
+            return false;
+        }
+        $result = array();
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $result = array_merge($result, $this->arrayFlatten($value));
+            } else {
+                $result[$key] = $value;
+            }
+        }
+        return $result;
     }
 
     /**

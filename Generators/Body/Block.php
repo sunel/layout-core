@@ -27,7 +27,7 @@ class Block extends AbstractGenrator
                 }
             } catch (\Exception $e) {
                 throw $e;
-            }            
+            }
         } catch (\Exception $e) {
             throw $e;
             unset($blocks[$elementName]);
@@ -86,14 +86,14 @@ class Block extends AbstractGenrator
         return $block;
     }
 
-     /**
-     * Run action defined in layout update
-     *
-     * @param \Layout\Core\Block\AbstractBlock $block
-     * @param string $methodName
-     * @param array $actionArguments
-     * @return void
-     */
+    /**
+    * Run action defined in layout update
+    *
+    * @param \Layout\Core\Block\AbstractBlock $block
+    * @param string $methodName
+    * @param array $actionArguments
+    * @return void
+    */
     protected function generateAction($block, $methodName, $actionArguments)
     {
         call_user_func_array([$block, $methodName], $args);

@@ -39,7 +39,7 @@ class NodeReader implements ArrayAccess
             'move' => Readers\Move::class,
         ], $readers);
         
-        $this->nodeReaders = array_map(function($reader) {
+        $this->nodeReaders = array_map(function ($reader) {
             return new $reader($this);
         }, $readers);
     }
@@ -77,7 +77,7 @@ class NodeReader implements ArrayAccess
     {
         // if it hasn't a name it must be generated
         if (!(string)$currentNode->getAttribute('name')) {
-            $name = $this->_generateAnonymousName($parentNode->getElementName() . '_schedule_block');
+            $name = $this->generateAnonymousName($parentNode->getElementName() . '_schedule_block');
             $currentNode->setAttribute('name', $name);
         }
         $path = $name = (string)$currentNode->getAttribute('name');
@@ -96,7 +96,7 @@ class NodeReader implements ArrayAccess
         if ($parentName) {
             $row['as'] = (string)$currentNode->getAttribute('as');
             $row['parent_name'] = $parentName;
-            list($row['child_name'], $row['is_after']) = $this->_beforeAfterToSibling($currentNode);
+            list($row['child_name'], $row['is_after']) = $this->beforeAfterToSibling($currentNode);
 
             // materialized path for referencing nodes in the plain array of _stack
             if ($stack->hasPath($parentName)) {
@@ -104,7 +104,7 @@ class NodeReader implements ArrayAccess
             }
         }
 
-        $this->_overrideElementWorkaround($stack, $name, $path);
+        $this->overrideElement($stack, $name, $path);
         $stack->setPathElement($name, $path);
         $stack->setStructureElement($name, $row);
         return $name;
@@ -121,7 +121,7 @@ class NodeReader implements ArrayAccess
      * @param string $path
      * @return void
      */
-    protected function _overrideElementWorkaround($stack, $name, $path)
+    protected function overrideElement($stack, $name, $path)
     {
         if ($stack->hasStructureElement($name)) {
             $stack->setStructureElementData($name, []);
@@ -140,7 +140,7 @@ class NodeReader implements ArrayAccess
      * @param \Layout\Core\Xml\Element $node
      * @return array
      */
-    protected function _beforeAfterToSibling($node)
+    protected function beforeAfterToSibling($node)
     {
         $result = [null, true];
         if (isset($node['after'])) {
@@ -158,12 +158,15 @@ class NodeReader implements ArrayAccess
      * @param string $class
      * @return string
      */
-    protected function _generateAnonymousName($class)
+    protected function generateAnonymousName($class)
     {
         $key = strtolower(trim($class, '_'));
         return $key . $this->counter++;
     }
 
+    /**
+    * {@inheritdoc}
+    */
     public function offsetSet($offset, $value)
     {
         if (is_null($offset)) {
@@ -173,16 +176,25 @@ class NodeReader implements ArrayAccess
         }
     }
 
+    /**
+    * {@inheritdoc}
+    */
     public function offsetExists($offset)
     {
         return isset($this->nodeReaders[$offset]);
     }
 
+    /**
+    * {@inheritdoc}
+    */
     public function offsetUnset($offset)
     {
         unset($this->nodeReaders[$offset]);
     }
 
+    /**
+    * {@inheritdoc}
+    */
     public function offsetGet($offset)
     {
         return isset($this->nodeReaders[$offset]) ? $this->nodeReaders[$offset] : null;

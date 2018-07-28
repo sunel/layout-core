@@ -41,7 +41,7 @@ class Structure
     }
 
     /**
-     * Set elements from external source
+     * Set elements from source
      *
      * @param array $elements
      * @return void
@@ -54,12 +54,12 @@ class Structure
             if (is_numeric($elementId)) {
                 throw new Exception("Element ID must not be numeric: '%1'.", [$elementId]);
             }
-            $this->_assertParentRelation($elementId);
+            $this->assertParentRelation($elementId);
             if (isset($element[self::GROUPS])) {
                 $groups = $element[self::GROUPS];
-                $this->_assertArray($groups);
+                $this->assertArray($groups);
                 foreach ($groups as $groupName => $group) {
-                    $this->_assertArray($group);
+                    $this->assertArray($group);
                     if ($group !== array_flip($group)) {
                         throw new Exception(
                             "Invalid format of group '%1': %2",
@@ -67,7 +67,7 @@ class Structure
                         );
                     }
                     foreach ($group as $groupElementId) {
-                        $this->_assertElementExists($groupElementId);
+                        $this->assertElementExists($groupElementId);
                     }
                 }
             }
@@ -87,7 +87,7 @@ class Structure
     public function createStructuralElement($name, $type, $class)
     {
         if (empty($name)) {
-            $name = $this->_generateAnonymousName($class);
+            $name = $this->generateAnonymousName($class);
         }
         $this->createElement($name, ['type' => $type]);
         return $name;
@@ -99,7 +99,7 @@ class Structure
      * @param string $class
      * @return string
      */
-    protected function _generateAnonymousName($class)
+    protected function generateAnonymousName($class)
     {
         $position = strpos($class, '\\Block\\');
         $key = $position !== false ? substr($class, $position + 7) : $class;
@@ -141,7 +141,7 @@ class Structure
             if ($this->getChildId($parentName, $offsetOrSibling) !== false) {
                 $offsetOrSibling = $this->getChildId($parentName, $offsetOrSibling);
             }
-            $sibling = $this->_filterSearchMinus($offsetOrSibling, $children, $after);
+            $sibling = $this->filterSearchMinus($offsetOrSibling, $children, $after);
             if ($childName !== $sibling) {
                 $siblingParentName = $this->getParentId($sibling);
                 if ($parentName !== $siblingParentName) {
@@ -165,7 +165,7 @@ class Structure
      * @param bool $isLast
      * @return string
      */
-    protected function _filterSearchMinus($needle, array $haystack, $isLast)
+    protected function filterSearchMinus($needle, array $haystack, $isLast)
     {
         if ('-' === $needle) {
             if ($isLast) {
@@ -183,14 +183,14 @@ class Structure
      * @return void
      * @throws Exception
      */
-    protected function _assertParentRelation($elementId)
+    protected function assertParentRelation($elementId)
     {
         $element = $this->_elements[$elementId];
 
         // element presence in its parent's nested set
         if (isset($element[self::PARENT])) {
             $parentId = $element[self::PARENT];
-            $this->_assertElementExists($parentId);
+            $this->assertElementExists($parentId);
             if (empty($this->_elements[$parentId][self::CHILDREN][$elementId])) {
                 throw new Exception(
                     "Broken parent-child relation: the '%1' is not in the nested set of '%2'.",
@@ -202,12 +202,12 @@ class Structure
         // element presence in its children
         if (isset($element[self::CHILDREN])) {
             $children = $element[self::CHILDREN];
-            $this->_assertArray($children);
+            $this->assertArray($children);
             if ($children !== array_flip(array_flip($children))) {
                 throw new Exception('Invalid format of children: %1', [var_export($children, 1)]);
             }
             foreach (array_keys($children) as $childId) {
-                $this->_assertElementExists($childId);
+                $this->assertElementExists($childId);
                 if (!isset(
                     $this->_elements[$childId][self::PARENT]
                 ) || $elementId !== $this->_elements[$childId][self::PARENT]
@@ -222,11 +222,11 @@ class Structure
     }
 
     /**
-     * Dump all elements
+     * Get all elements
      *
      * @return array
      */
-    public function exportElements()
+    public function elements()
     {
         return $this->_elements;
     }
@@ -286,7 +286,7 @@ class Structure
     {
         if (isset($this->_elements[$elementId][self::CHILDREN])) {
             foreach (array_keys($this->_elements[$elementId][self::CHILDREN]) as $childId) {
-                $this->_assertElementExists($childId);
+                $this->assertElementExists($childId);
                 if ($recursive) {
                     $this->unsetElement($childId, $recursive);
                 } else {
@@ -311,7 +311,7 @@ class Structure
      */
     public function setAttribute($elementId, $attribute, $value)
     {
-        $this->_assertElementExists($elementId);
+        $this->assertElementExists($elementId);
         switch ($attribute) {
             case self::PARENT:
                 // break is intentionally omitted
@@ -333,7 +333,7 @@ class Structure
      */
     public function getAttribute($elementId, $attribute)
     {
-        $this->_assertElementExists($elementId);
+        $this->assertElementExists($elementId);
         if (isset($this->_elements[$elementId][$attribute])) {
             return $this->_elements[$elementId][$attribute];
         }
@@ -350,7 +350,7 @@ class Structure
      */
     public function renameElement($oldId, $newId)
     {
-        $this->_assertElementExists($oldId);
+        $this->assertElementExists($oldId);
         if (!$newId || isset($this->_elements[$newId])) {
             throw new Exception("Element with ID '%1' is already defined.", [$newId]);
         }
@@ -361,7 +361,7 @@ class Structure
         // rename references in children
         if (isset($this->_elements[$oldId][self::CHILDREN])) {
             foreach (array_keys($this->_elements[$oldId][self::CHILDREN]) as $childId) {
-                $this->_assertElementExists($childId);
+                $this->assertElementExists($childId);
                 $this->_elements[$childId][self::PARENT] = $newId;
             }
         }
@@ -584,7 +584,7 @@ class Structure
     {
         $parentId = $this->getParentId($childId);
         if ($parentId) {
-            $this->_assertElementExists($parentId);
+            $this->assertElementExists($parentId);
             $this->_elements[$parentId][self::GROUPS][$groupName][$childId] = $childId;
             return true;
         }
@@ -675,14 +675,14 @@ class Structure
         $alias = $alias ?: $elementId;
 
         // validate
-        $this->_assertElementExists($elementId);
+        $this->assertElementExists($elementId);
         if (!empty($this->_elements[$elementId][self::PARENT])) {
             throw new Exception(
                 "The element '%1' already has a parent: '%2'",
                 [$elementId, $this->_elements[$elementId][self::PARENT]]
             );
         }
-        $this->_assertElementExists($targetParentId);
+        $this->assertElementExists($targetParentId);
         $children = $this->getChildren($targetParentId);
         if (isset($children[$elementId])) {
             throw new Exception("The element '%1' already a child of '%2'", [$elementId, $targetParentId]);
@@ -713,7 +713,7 @@ class Structure
      * @return void
      * @throws Exception if doesn't exist
      */
-    private function _assertElementExists($elementId)
+    private function assertElementExists($elementId)
     {
         if (!isset($this->_elements[$elementId])) {
             throw new \OutOfBoundsException("No element found with ID '{$elementId}'.");
@@ -727,7 +727,7 @@ class Structure
      * @return void
      * @throws Exception
      */
-    private function _assertArray($value)
+    private function assertArray($value)
     {
         if (!is_array($value)) {
             throw new Exception("An array expected: %1", [var_export($value, 1)]);

@@ -6,7 +6,7 @@ use Layout\Core\Data\Structure;
 
 interface BodyInterface
 {
-	
+    
     /**
      * Traverse through all nodes
      *

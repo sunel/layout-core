@@ -51,9 +51,9 @@ class Head implements ReaderInterface
                 case 'base':
                     $node->addAttribute('content_type', 'base');
                     $stack->addAssets($node->getAttribute('src'), $this->getAttributes($node));
-                    break;    
+                    break;
                 case 'remove':
-                    $stack->removeAssets($node->getAttribute('src'));
+                    $stack->removeAsset($node->getAttribute('src'));
                     break;
                 case 'title':
                     $stack->setTitle($node);
@@ -61,7 +61,7 @@ class Head implements ReaderInterface
                 case 'meta':
                     if ($node->getAttribute('http_equiv')) {
                         $metadataName = $node->getAttribute('http_equiv');
-                    } else if ($node->getAttribute('property')) {
+                    } elseif ($node->getAttribute('property')) {
                         $metadataName = $node->getAttribute('property');
                     } else {
                         $metadataName = $node->getAttribute('name');

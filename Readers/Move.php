@@ -36,13 +36,13 @@ class Move implements ReaderInterface
         $this->scheduleMove($stack, $element);
     }
 
-   /**
-     * Process block element their attributes and children
-     *
-     * @param Layout\Core\Data\Stack $stack
-     * @param Layout\Core\Xml\Element $currentElement
-     * @return $this
-     */
+    /**
+      * Process block element their attributes and children
+      *
+      * @param Layout\Core\Data\Stack $stack
+      * @param Layout\Core\Xml\Element $currentElement
+      * @return $this
+      */
     protected function scheduleMove(Stack $stack, Element $currentElement)
     {
         $elementName = (string)$currentElement->getAttribute('element');

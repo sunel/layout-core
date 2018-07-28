@@ -9,7 +9,7 @@ class Head
 {
     /**
      * Holds the resolved asset data
-     * 
+     *
      * @var array
      */
     protected $resultAsset = [];
@@ -23,34 +23,35 @@ class Head
      */
     public function generate(Stack $stack, Layout $layout)
     {
-        $result = [];
-        $result['meta'] = $this->renderMetadata($stack);
-        $result['title'] = $this->renderTitle($stack);
-        $stack->processRemoveAssets();
-        $result = array_merge($result, $this->renderAssets($stack));
-        $result['head_includes'] = $layout->getConfigObject()->get('head.includes', '');    
-        return $result;
+        $stack->removeAssets();
+
+        $result = [
+          'meta'    => $this->renderMetadata($stack->getMetadata()),
+          'title'   => $this->renderTitle($stack->getTitle()),
+        ];
+
+        return array_merge($result, $this->renderAssets($stack->getAssets()));
     }
 
     /**
-     * 
-     * @param Layout\Core\Data\Stack $stack
+     *
+     * @param string $title
      * @return string
      */
-    protected function renderTitle(Stack $stack)
+    protected function renderTitle($title)
     {
-        return '<title>' . htmlspecialchars($stack->getTitle(), ENT_COMPAT, 'UTF-8', false) . '</title>' . "\n";
+        return '<title>' . htmlspecialchars($title, ENT_COMPAT, 'UTF-8', false) . '</title>' . "\n";
     }
 
     /**
-     * 
-     * @param Layout\Core\Data\Stack $stack
+     *
+     * @param array $metadata
      * @return string
      */
-    protected function renderMetadata(Stack $stack)
+    protected function renderMetadata($metadata)
     {
         $result = '';
-        foreach ($stack->getMetadata() as $name => $content) {
+        foreach ($metadata as $name => $content) {
             $metadataTemplate = $this->getMetadataTemplate($name);
             if (!$metadataTemplate) {
                 continue;
@@ -91,21 +92,21 @@ class Head
         return $metadataTemplate;
     }
 
-     /**
-     * 
-     * @param Layout\Core\Data\Stack $stack
-     * @return string
-     */
-    protected function renderAssets(Stack $stack)
+    /**
+    *
+    * @param array $assets
+    * @return string
+    */
+    protected function renderAssets($assets)
     {
-        if(empty($this->resultAsset)) {
+        if (empty($this->resultAsset)) {
             $result = [];
-            foreach ($stack->getAssets() as $asset) {
-                $attributes = array_diff_key($asset,array_flip(['src','content_type']));
+            foreach ($assets as $asset) {
+                $attributes = array_diff_key($asset, array_flip(['src','content_type']));
                 $attributes = $this->getAttributes($attributes);
-                $assetTemplate = $this->getAssetTemplate($asset['content_type'],$attributes);
+                $assetTemplate = $this->getAssetTemplate($asset['content_type'], $attributes);
 
-                if(!isset($result[$asset['content_type']])) {
+                if (!isset($result[$asset['content_type']])) {
                     $result[$asset['content_type']] = '';
                 }
                 $result[$asset['content_type']] .= str_replace('%s', $asset['src'], $assetTemplate);
@@ -127,8 +128,8 @@ class Head
                 $groupTemplate = '<script ' . $attributes . ' src="%baseurl%s"></script>' . "\n";
                 break;
             case 'base':
-                $groupTemplate = '<base ' . $attributes . ' href="%s" />' . "\n"; 
-                break; 
+                $groupTemplate = '<base ' . $attributes . ' href="%s" />' . "\n";
+                break;
             case 'css':
                 $groupTemplate = '<link ' . $attributes . ' href="%baseurl%s" />' . "\n";
                 break;

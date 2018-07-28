@@ -40,16 +40,16 @@ class PageFactory
      */
     protected $cache;
 
-     /**
-     * The layout instance.
-     *
-     * @var \Layout\Core\Page\Layout
-     */
+    /**
+    * The layout instance.
+    *
+    * @var \Layout\Core\Page\Layout
+    */
     protected $layout;
 
     /**
      * Holds the current handle for the layout.
-     * 
+     *
      * @var string
      */
     protected $currentHandle;

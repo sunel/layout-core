@@ -17,13 +17,12 @@ use Layout\Core\Contracts\EventsDispatcher as Dispatcher;
 
 class Layout
 {
-    /**#@+
+    /**
      * Constants of available types
      */
     const ELEMENT_TYPE_BODY = 'body';
     const ELEMENT_TYPE_HTML = 'html';
     const ELEMENT_TYPE_HEAD = 'head';
-    /**#@-*/
 
     /**
      * Constant body attribute class
@@ -216,15 +215,48 @@ class Layout
         }
     }
 
-     /**
-     * Layout xml generation
+    /**
+     * Get all blocks marked for output
      *
-     * @return $this
+     * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
      */
+    public function getOutput()
+    {
+        $body = '';
+        foreach ($this->output as $name) {
+            $body .= $this->renderElement($name);
+        }
+        $head = $this->generateHeadElemets();
+
+        return [
+            'head' => $head,
+            'body' => $body,
+            'bodyAttributes' => $this->renderElementAttributes(self::ELEMENT_TYPE_BODY)
+        ];
+    }
+
+    /**
+     * Generate the head section
+     *
+     * @return array
+     */
+    public function generateHeadElemets()
+    {
+        return (new HeadGenerator())->generate($this->layoutStack, $this);
+    }
+
+    /**
+    * Layout xml generation
+    *
+    * @return $this
+    */
     public function generateXml()
     {
-        $xml = $this->manager()->asSimplexml();
-        $this->setXml($xml);
+        $this->setXml(
+            $this
+            ->manager()
+            ->asSimplexml()
+        );
         $this->structure->importElements([]);
         $this->layoutStack = new Stack();
         return $this;
@@ -273,7 +305,7 @@ class Layout
      */
     protected function addToOutputRootContainers()
     {
-        foreach ($this->structure->exportElements() as $name => $element) {
+        foreach ($this->structure->elements() as $name => $element) {
             if ($element['type'] === 'container' && empty($element['parent'])) {
                 $this->addOutputElement($name);
             }
@@ -307,17 +339,6 @@ class Layout
         return $this;
     }
 
-
-    /**
-     * Generate the head section
-     *
-     * @return array
-     */
-    public function generateHeadElemets()
-    {
-        return (new HeadGenerator())->generate($this->layoutStack, $this);
-    }
-
     /**
      * @param string $elementType
      * @return string
@@ -349,23 +370,6 @@ class Layout
             implode(' ', $bodyClasses)
         );
         return $this;
-    }
-
-
-    /**
-     * Get all blocks marked for output
-     *
-     * @return array ['head' => [] ,'body' => '', 'bodyAttributes' => []]
-     */
-    public function getOutput()
-    {
-        $out = '';
-        foreach ($this->output as $name) {
-            $out .= $this->renderElement($name);
-        }
-        $head = $this->generateHeadElemets();
-
-        return ['head' => $head, 'body' => $out, 'bodyAttributes' => $this->renderElementAttributes(self::ELEMENT_TYPE_BODY)];
     }
 
     /**
@@ -633,14 +637,14 @@ class Layout
         return $this;
     }
 
-     /**
-     * Create block instance
-     *
-     * @param string|\Layout\Core\Block\AbstractBlock $block
-     * @param string $name
-     * @param array $arguments
-     * @return \Layout\Core\Block\AbstractBlock
-     */
+    /**
+    * Create block instance
+    *
+    * @param string|\Layout\Core\Block\AbstractBlock $block
+    * @param string $name
+    * @param array $arguments
+    * @return \Layout\Core\Block\AbstractBlock
+    */
     public function createBlock($block, $name, array $arguments = [])
     {
         $block = $this->getBlockInstance($block);

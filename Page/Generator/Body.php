@@ -42,7 +42,7 @@ class Body
             'container' => \Layout\Core\Generators\Body\Container::class,
         ], $generators);
 
-        $this->elementGenerators = array_map(function($generator) {
+        $this->elementGenerators = array_map(function ($generator) {
             return new $generator($this);
         }, $generators);
     }
@@ -57,13 +57,13 @@ class Body
         return $this->layout;
     }
 
-     /**
-     * Traverse through all nodes
-     *
-     * @param Layout\Core\Data\Stack $stack
-     * @param Layout\Core\Data\Structure $structure
-     * @return $this
-     */
+    /**
+    * Traverse through all nodes
+    *
+    * @param Layout\Core\Data\Stack $stack
+    * @param Layout\Core\Data\Structure $structure
+    * @return $this
+    */
     public function generate(Stack $stack, Structure $structure)
     {
         $this->buildStructure($stack, $structure);
@@ -73,7 +73,7 @@ class Body
                 continue;
             }
             $generator = $this->elementGenerators[$type];
-            $generator->generate($elementName, $type, $data, $structure);            
+            $generator->generate($elementName, $type, $data, $structure);
         }
     }
 
@@ -124,7 +124,8 @@ class Body
      * @return void
      */
     public function scheduleElement(
-        Stack $stack, Structure $structure,
+        Stack $stack,
+        Structure $structure,
         $key
     ) {
         $row = $stack->getStructureElement($key);
@@ -175,7 +176,8 @@ class Body
      * @return void
      */
     protected function reorderElements(
-        Stack $stack, Structure $structure,
+        Stack $stack,
+        Structure $structure,
         $elementName
     ) {
         $element = $stack->getElementToSort($elementName);
@@ -215,7 +217,8 @@ class Body
      * @return $this
      */
     protected function moveElementInStructure(
-        Stack $stack, Structure $structure,
+        Stack $stack,
+        Structure $structure,
         $element
     ) {
         list($destination, $siblingName, $isAfter, $alias) = $stack->getElementToMove($element);
@@ -243,7 +246,8 @@ class Body
      * @return $this
      */
     protected function removeElement(
-        Stack $stack, Structure $structure,
+        Stack $stack,
+        Structure $structure,
         $elementName,
         $isChild = false
     ) {
@@ -273,7 +277,7 @@ class Body
     protected function _createStructuralElement(Structure $structure, $name, $type, $class)
     {
         if (empty($name)) {
-            $name = $this->_generateAnonymousName($class);
+            $name = $this->generateAnonymousName($class);
         }
         $structure->createElement($name, ['type' => $type]);
         return $name;
@@ -285,7 +289,7 @@ class Body
      * @param string $class
      * @return string
      */
-    protected function _generateAnonymousName($class)
+    protected function generateAnonymousName($class)
     {
         $key = strtolower(trim($class, '_'));
         return $key . $this->counter++;

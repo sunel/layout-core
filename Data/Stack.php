@@ -6,14 +6,13 @@ use Exception;
 
 class Stack
 {
-    /**#@+
+    /**
      * Keys for array of elements to sort
      */
     const ELEMENT_NAME = 'elementName';
     const ELEMENT_PARENT_NAME = 'parentName';
     const ELEMENT_OFFSET_OR_SIBLING  = 'offsetOrSibling';
     const ELEMENT_IS_AFTER = 'isAfter';
-    /**#@-*/
 
     /**
      * Information assets elements on page
@@ -635,11 +634,11 @@ class Stack
      */
     public function getElementAttributes($elementType = null)
     {
-        if(is_null($elementType)) {
+        if (is_null($elementType)) {
             return $this->elementAttributes;
         }
 
-        return isset($this->elementAttributes[$elementType]) ? $this->elementAttributes[$elementType] : [];        
+        return isset($this->elementAttributes[$elementType]) ? $this->elementAttributes[$elementType] : [];
     }
 
     /**
@@ -706,7 +705,7 @@ class Stack
      * @param string $name
      * @return $this
      */
-    public function removeAssets($name)
+    public function removeAsset($name)
     {
         $this->removeAssets[$name] = $name;
         return $this;
@@ -715,7 +714,7 @@ class Stack
     /**
      * @return $this
      */
-    public function processRemoveAssets()
+    public function removeAssets()
     {
         $this->assets = array_diff_key($this->assets, $this->removeAssets);
         $this->removeAssets = [];

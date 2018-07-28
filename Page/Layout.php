@@ -373,6 +373,21 @@ class Layout
     }
 
     /**
+     * Add an element in structure
+     *
+     * Will assign an "anonymous" name to the element, if provided with an empty name
+     *
+     * @param string $name
+     * @param string $type
+     * @param string $class
+     * @return string
+     */
+    public function addElement($name, $type, $class)
+    {
+        return $this->structure->createStructuralElement($name, $type, $class);
+    }
+
+    /**
      * Find an element in layout, render it and return string with its output
      *
      * @param string $name
